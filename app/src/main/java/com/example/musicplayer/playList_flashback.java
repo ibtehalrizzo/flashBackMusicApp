@@ -9,8 +9,7 @@ import java.util.TreeSet;
  * Created by lenovo on 2018/2/7.
  */
 
-public class playList_flashback extends Score {
-    List<Song> songList;
+public class playList_flashback extends Alltrack {
     Set<Song> sortingList;  //Use a TreeSet to store sorting songs
     public playList_flashback(){
         sortingList=new TreeSet<Song>(new Comparator<Song>() {

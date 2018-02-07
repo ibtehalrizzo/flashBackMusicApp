@@ -16,6 +16,7 @@ public class Song {
     String mostRecentDateTime;
     Location mostRecentLocation; //don’t know yet
     HashSet<Location> locationHistory;
+    HashSet<String> dayHistory;
     HashSet<String> timeHistory;
     int score;
     int status; //1 - favorite, 0 - neutral, -1 - dislike
