@@ -1,5 +1,6 @@
 package com.example.musicplayer;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -8,6 +9,11 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,5 +54,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+    public void saveScore(Score score){
+        SharedPreferences sharedPreferences = getSharedPreferences("user_name", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        Set<String> listOfSong = new HashSet<>();
+        listOfSong.addAll(score.listSong);
+        editor.putStringSet("scorelist", listOfSong);
+    }
+
+    public Score loadScore(){
+        SharedPreferences sharedPreferences = getSharedPreferences("user_name", MODE_PRIVATE);
+        Set<String> listOfSong = sharedPreferences.getStringSet("scorelist", null );
+        List<String> songList = new ArrayList<>();
+        songList.addAll(listOfSong);
+        Score score = new Score(songList);
+        return score;
     }
 }
