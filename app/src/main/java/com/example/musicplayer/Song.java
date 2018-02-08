@@ -4,6 +4,8 @@ import android.location.Location;
 import android.location.LocationListener;
 
 import java.sql.Time;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,7 +17,7 @@ import java.util.Set;
 public class Song {
     public String songName;
     public String artist;
-    public Time mostRecentDateTime;
+    public Calendar mostRecentDateTime;
     public Location mostRecentLocation; //don’t know yet
     public HashSet<Location> locationHistory;
     public HashSet<Integer> dayHistory;  // 1-Monday 2-Tuesday 3-Wednesday 4- Thursday 5-Friday 6-Saturday 7-Sunday

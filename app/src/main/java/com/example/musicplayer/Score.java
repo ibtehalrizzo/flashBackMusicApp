@@ -20,7 +20,7 @@ public class Score {
     List<String> listSong;
     AlbumList list;// store format: String("albumname,songname")
     public Score(){}
-    public Score(AlbumList list) {
+    public Score(AlbumList list) {   //add the tracks from the album to the score
         this.list=list;
         albumName = new ArrayList<>(list.albumList.keySet());
         listSong = new ArrayList<>();
@@ -64,7 +64,7 @@ public class Score {
                 if (dayHistory.contains(day))    //If the song was played in the same day, score increase
                     song.score++;
                 if (status == 1)                 //If the song is favorite, score increase
-                    song.score++;
+                    song.score = song.score+2;
                 else if (status == -1)           //If the song is disliked, not play it
                     song.score = -1;
                 album.songList.put(songName,song);
