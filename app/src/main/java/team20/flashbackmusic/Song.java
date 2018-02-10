@@ -47,11 +47,6 @@ public class Song {
         return mostRecentLocation;
     }
 
-    public void setStatus(int s)
-    {
-        status = s;
-    }
-
     public int getStatus()
     {
         return status;
@@ -61,4 +56,9 @@ public class Song {
     {
         return score;
     }
+
+    public void setScore(int s) { score = s; }
+
+    public void setStatus(int s) { status = s; }
+
 }

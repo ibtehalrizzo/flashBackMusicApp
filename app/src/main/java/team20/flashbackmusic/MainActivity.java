@@ -1,6 +1,8 @@
 package team20.flashbackmusic;
 
 import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -15,6 +17,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
+import java.io.FileDescriptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +27,10 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private ListView listView;
     private ListAdapter listAdapter;
+    private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+    private Cursor cursor;
+
+    // TODO: Change to List<Song> later
     private List<String> songList;
 
     @Override
@@ -32,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        //Play or Pause button
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
         // Make list
         listView = (ListView) findViewById(R.id.songList);
@@ -53,11 +63,12 @@ public class MainActivity extends AppCompatActivity {
                 int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
                 mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                 mediaPlayer.start();
+                fab.setImageResource(R.drawable.ic_pause_black_24dp);
             }
         });
 
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -65,8 +76,20 @@ public class MainActivity extends AppCompatActivity {
                 //Replace with play the current music played
                 //or just change to pause button if there is no music
                 //selected
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                if(mediaPlayer != null)
+                {
+                    if (mediaPlayer.isPlaying()) {
+                        mediaPlayer.pause();
+                        fab.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+
+                    }
+                    else {
+                        mediaPlayer.start();
+                        fab.setImageResource(R.drawable.ic_pause_black_24dp);
+
+                    }
+                }
+
             }
         });
 
@@ -74,12 +97,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    // TODO: Pull metadata from mp3 and send to Song.
+
+
     public void getMusic(List songList)
     {
         Field[] fields = R.raw.class.getFields();
+        FileDescriptor fd;
 
         for (int i = 0; i < fields.length; i++) {
-            songList.add(fields[i].getName());
+
+            String songFilename = fields[i].getName();
+            songList.add(songFilename);
+            mmr.setDataSource(fields[i].getName());
+            String test = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            System.out.println(test);
         }
     }
 
