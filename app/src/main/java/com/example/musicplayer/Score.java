@@ -16,29 +16,13 @@ import java.util.Set;
  */
 
 public class Score {
-    List<String> albumName;
-    List<String> listSong;
-    AlbumList list;// store format: String("albumname,songname")
+    ArrayList<String> listSong;
+    public SongList songs;
     public Score(){}
-    public Score(AlbumList list) {   //add the tracks from the album to the score
-        this.list=list;
-        albumName = new ArrayList<>(list.albumList.keySet());
-        listSong = new ArrayList<>();
-        int len = albumName.size();    //number of songs
-        for (int i = 0; i < len; i++) {
-            String albumname = albumName.get(i);
-            Album album = list.albumList.get(albumname);
-            Hashtable<String, Song> songList = album.songList;
-            List<String> trackname = new ArrayList<>(songList.keySet());
-            for (int j = 0; j < trackname.size(); j++) {
-                String songname = trackname.get(j);
-                listSong.add(new String(albumname+","+songname));
-            }
-        }
+    public Score(SongList songList) {   //add the tracks from the album to the score
+        songs = songList;
+        listSong =new ArrayList<String>(songList.songlist.keySet());
         //Create score system
-    }
-    public Score(List<String> listSong){
-        this.listSong=listSong;
     }
 
     //public void addSong(Song song){
@@ -47,11 +31,8 @@ public class Score {
     public void score(Location location, int day, int time) {
         int len = listSong.size();// real-time location and time
         for (int i = 0; i < len; i++) {
-                String[] name = listSong.get(i).split(",");
-                String songName=name[1];
-                String albumName=name[0];
-                Album album = list.albumList.get(albumName);
-                Song song = album.songList.get(songName);
+                String name = listSong.get(i);
+                Song song = songs.songlist.get(name);
                 song.score = 0;
                 HashSet<Location> locationHistory = song.locationHistory;    //get location and time history of corresponding song
                 HashSet<Integer> dayHistory = song.dayHistory;
@@ -67,7 +48,7 @@ public class Score {
                     song.score = song.score+2;
                 else if (status == -1)           //If the song is disliked, not play it
                     song.score = -1;
-                album.songList.put(songName,song);
+                songs.songlist.put(name,song);
             }
         }
 }

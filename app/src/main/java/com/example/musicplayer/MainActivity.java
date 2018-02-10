@@ -55,10 +55,10 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-    public void saveScore(Score score){
-        SharedPreferences sharedPreferences = getSharedPreferences("user_name", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
+  //  public void saveScore(Score score){
+    //    SharedPreferences sharedPreferences = getSharedPreferences("user_name", MODE_PRIVATE);
+      //  SharedPreferences.Editor editor = sharedPreferences.edit();
+/*
         Set<String> listOfSong = new HashSet<>();
         listOfSong.addAll(score.listSong);
         editor.putStringSet("scorelist", listOfSong);
@@ -72,4 +72,5 @@ public class MainActivity extends AppCompatActivity {
         Score score = new Score(songList);
         return score;
     }
+    */
 }
