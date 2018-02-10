@@ -18,6 +18,60 @@
         app:layout_constraintRight_toRightOf="parent"
         />
 
+
+    <TextView
+        android:id="@+id/nowPlaying"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20dp"
+        android:text="<Current playing song> - <Artist>"
+        android:paddingHorizontal="20dp"
+        android:layout_marginTop="10dp"
+        android:textAlignment="center"
+        app:layout_constraintLeft_toLeftOf="@id/songList"
+        app:layout_constraintRight_toRightOf="@id/songList"
+        app:layout_constraintTop_toBottomOf="@id/songList"/>
+
+    <TextView
+        android:id="@+id/playingLoc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:textSize="20dp"
+        android:text="<Location>"
+        android:layout_marginBottom="10dp"
+        android:textAlignment="center"
+        app:layout_constraintLeft_toLeftOf="@id/nowPlaying"
+        app:layout_constraintRight_toRightOf="@id/nowPlaying"
+        app:layout_constraintTop_toBottomOf="@id/nowPlaying"/>
+
+    <TextView
+        android:id="@+id/songDuration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:textSize="20dp"
+        android:text="<Song duration>"
+        android:layout_marginTop="0dp"
+        android:textAlignment="center"
+        app:layout_constraintLeft_toLeftOf="@id/playingLoc"
+        app:layout_constraintRight_toRightOf="@id/playingLoc"
+        app:layout_constraintTop_toBottomOf="@id/playingLoc"/>
+
+    <Button
+        android:id="@+id/flashbackButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:textSize="20dp"
+        android:text="<Flashback Button here>"
+        android:layout_marginTop="0dp"
+        android:textAlignment="center"
+        app:layout_constraintLeft_toLeftOf="@id/playingLoc"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+
     <GridView
         android:id="@+id/albumList"
         android:layout_width="368dp"
