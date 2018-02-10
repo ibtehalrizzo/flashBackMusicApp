@@ -15,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -29,8 +30,9 @@ public class MainActivity extends AppCompatActivity {
     private ListView listView;
     private ListAdapter listAdapter;
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-//    private Uri uri = MediaStore.Audio..EXTERNAL_CONTENT_URI;
+    private TextView nowPlayingView, locationView, durationView;
     private Cursor cursor;
+//    private Hashtable<Integer, String> songTitle;
     // TODO: Change to List<Song> later
     private List<String> songList;
     private List<String> songTitleList;
@@ -48,6 +50,11 @@ public class MainActivity extends AppCompatActivity {
         // Init tag to play (TODO: should change to previously closed state)
         fab.setTag(R.drawable.ic_play_arrow_black_24dp);
 
+        nowPlayingView = (TextView) findViewById(R.id.nowPlaying);
+        locationView = (TextView) findViewById(R.id.playingLoc);
+        durationView = (TextView) findViewById(R.id.songDuration);
+
+
         // Make list
         listView = (ListView) findViewById(R.id.songList);
 
@@ -62,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
                 if (mediaPlayer != null) {
                     mediaPlayer.release();
                 }
@@ -70,6 +78,13 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                 mediaPlayer.start();
                 fab.setImageResource(R.drawable.ic_pause_black_24dp);
+
+
+
+                //hover the now playing text view
+                String repeat = new String(new char[1]).replace("\0", " ");
+                nowPlayingView.setText(repeat+ songTitleList.get(i) + repeat);
+                nowPlayingView.setSelected(true);
             }
         });
 
@@ -86,11 +101,13 @@ public class MainActivity extends AppCompatActivity {
                 {
                     if (mediaPlayer.isPlaying()) {
                         mediaPlayer.pause();
+                        nowPlayingView.setSelected(false);
                         fab.setImageResource(R.drawable.ic_play_arrow_black_24dp);
 
                     }
                     else {
                         mediaPlayer.start();
+                        nowPlayingView.setSelected(true);
                         fab.setImageResource(R.drawable.ic_pause_black_24dp);
 
                     }
@@ -162,26 +179,13 @@ public class MainActivity extends AppCompatActivity {
 //            songList.add(title);
             songTitleList.add(title);
 
+//            songTitle.put(resId, title);
+
 
         }
 
 
     }
-
-
-//    public void loadMedia(int resourceId) {
-//        if (mediaPlayer == null) {
-//            mediaPlayer = new MediaPlayer();
-//        }
-//
-//        AssetFileDescriptor assetFileDescriptor = this.getResources().openRawResourceFd(resourceId);
-//        try {
-//            mediaPlayer.setDataSource(assetFileDescriptor);
-//            mediaPlayer.prepareAsync();
-//        } catch (Exception e) {
-//            System.out.println(e.toString());
-//        }
-//    }
 
     @Override
     public void onBackPressed() {
