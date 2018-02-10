@@ -1,12 +1,11 @@
 package team20.flashbackmusic;
 
-import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -17,21 +16,24 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 
-import java.io.FileDescriptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
+    private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
+
     private MediaPlayer mediaPlayer;
     private ListView listView;
     private ListAdapter listAdapter;
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+//    private Uri uri = MediaStore.Audio..EXTERNAL_CONTENT_URI;
     private Cursor cursor;
-
     // TODO: Change to List<Song> later
     private List<String> songList;
+    private List<String> songTitleList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,14 +45,18 @@ public class MainActivity extends AppCompatActivity {
         //Play or Pause button
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
+        // Init tag to play (TODO: should change to previously closed state)
+        fab.setTag(R.drawable.ic_play_arrow_black_24dp);
+
         // Make list
         listView = (ListView) findViewById(R.id.songList);
 
         songList = new ArrayList<>();
+        songTitleList = new ArrayList<>();
 
-        getMusic(songList);
+        getMusic(songList, songTitleList);
 
-        listAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songList);
+        listAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songTitleList);
         listView.setAdapter(listAdapter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -88,6 +94,14 @@ public class MainActivity extends AppCompatActivity {
                         fab.setImageResource(R.drawable.ic_pause_black_24dp);
 
                     }
+                } else {
+                    if (fab.getTag().equals(R.drawable.ic_play_arrow_black_24dp)) {
+                        fab.setImageResource(R.drawable.ic_pause_black_24dp);
+                        fab.setTag(R.drawable.ic_pause_black_24dp);
+                    } else {
+                        fab.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        fab.setTag(R.drawable.ic_play_arrow_black_24dp);
+                    }
                 }
 
             }
@@ -98,37 +112,81 @@ public class MainActivity extends AppCompatActivity {
 
 
     // TODO: Pull metadata from mp3 and send to Song.
+//    public void getMusic(List songList)
+//    {
+//        Field[] fields = R.raw.class.getFields();
+//
+//        Context c = getBaseContext();
+//        ContentResolver contentResolver = getContentResolver();
+//
+////        cursor = contentResolver.query(
+////                MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
+////                null, null, null, null);
+//
+////        cursor.moveToFirst();
+////        if (cursor != null) {
+////            while (cursor.moveToNext()) {
+////                Log.d(cursor.getString(cursor.getPosition()), "test song list: ");
+////            }
+////        }
+//        for(cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext())
+//        {
+////            Log.d(cursor.getString(cursor.getPosition()), "test song list: ");
+//            String test = cursor.getString(0);
+//            Log.d("tester", test);
+//        }
+//
+////        while (cursor.moveToNext()) {
+////            songList.add(cursor.getString(2));
+////        }
+//
+//    }
 
-
-    public void getMusic(List songList)
+//    Old getMusic method
+    public void getMusic(List songList, List songTitleList)
     {
         Field[] fields = R.raw.class.getFields();
-        FileDescriptor fd;
 
         for (int i = 0; i < fields.length; i++) {
-
             String songFilename = fields[i].getName();
             songList.add(songFilename);
-            mmr.setDataSource(fields[i].getName());
-            String test = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            System.out.println(test);
+
+
+            int resId = getResources().getIdentifier(songFilename, "raw", getPackageName());
+
+            Uri mediaPath = Uri.parse("android.resource://" + getPackageName() +
+                    "/" + resId);
+            mmr.setDataSource(this, mediaPath);
+            String title = mmr.extractMetadata(SONG_TITLE) +" - "
+                            + mmr.extractMetadata(SONG_ARTIST);
+//            songList.add(title);
+            songTitleList.add(title);
+
+
         }
+
+
     }
 
-    public void loadMedia(int resourceId) {
-        if (mediaPlayer == null) {
-            mediaPlayer = new MediaPlayer();
-        }
 
-        AssetFileDescriptor assetFileDescriptor = this.getResources().openRawResourceFd(resourceId);
-        try {
-            mediaPlayer.setDataSource(assetFileDescriptor);
-            mediaPlayer.prepareAsync();
-        } catch (Exception e) {
-            System.out.println(e.toString());
-        }
+//    public void loadMedia(int resourceId) {
+//        if (mediaPlayer == null) {
+//            mediaPlayer = new MediaPlayer();
+//        }
+//
+//        AssetFileDescriptor assetFileDescriptor = this.getResources().openRawResourceFd(resourceId);
+//        try {
+//            mediaPlayer.setDataSource(assetFileDescriptor);
+//            mediaPlayer.prepareAsync();
+//        } catch (Exception e) {
+//            System.out.println(e.toString());
+//        }
+//    }
+
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -151,4 +209,8 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    
+
+
+
 }
