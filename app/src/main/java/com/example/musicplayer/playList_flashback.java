@@ -3,9 +3,11 @@ package com.example.musicplayer;
 import android.location.Location;
 import android.location.LocationListener;
 
+import java.sql.Array;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -18,12 +20,15 @@ import java.util.TreeSet;
  */
 
 public class playList_flashback{
-    public TreeSet<String> sortingList;  //Use a TreeSet to store sorting songs
+    public ArrayList<String> sortingList;  //Use a TreeSet to store sorting songs
     public Score score;
-    public playList_flashback(final Score score){
+    int needChange=0;      //Every time play from the start of the playlist, judge whether the songlist need to be sorted. 0 means no need,1 means need.
+    public playList_flashback(final Score score) {    //constructor
         this.score = score;
-       // final ArrayList<String> list = score.listSong;
-        sortingList=new TreeSet<String>(new Comparator<String>() {
+        sortingList = score.listSong;
+    }
+    public void sorter(){            //callback this function to sort the playlist
+        Collections.sort(sortingList,new Comparator<String>() {
             @Override
             public int compare(String songname1, String songname2) {
                 if(songname1.equals(songname2))
@@ -44,20 +49,17 @@ public class playList_flashback{
                     return -1;
             }
         });
-        sortingList.addAll(score.listSong);// If meet the first song with -1 score, go to the begining of the set.
-    };
+        needChange = 0;     //no need to resort the play list
+    }
     public void changeToDislike(String name){    //add to dislike, score set to -1, skip it
         Song song = score.songs.songlist.get(name);
-        sortingList.remove(name);
         song.status=-1;
         song.score=-1;
-        score.songs.songlist.put(name,song);
-        sortingList.add(name);
+        needChange=1;   //need to resort the play list
     }
 
     public  void changeToNeutral(String name, Location location, int day, int time){   //change from dislike to neutral, calculate the score
         Song song = score.songs.songlist.get(name);
-        sortingList.remove(name);
         song.status=0;
         song.score=0;
         HashSet<Location> locationHistory = song.locationHistory;    //get location and time history of corresponding song
@@ -69,20 +71,13 @@ public class playList_flashback{
             song.score++;
         if (dayHistory.contains(day))    //If the song was played in the same day, score increase
             song.score++;
-        score.songs.songlist.put(name, song);
-        sortingList.add(name);
-
+        needChange=1;        //need to resort the play list
     }
 
     public void changeToFavorite(String name){      //change from neutral to favorite, add 1 to score
-        sortingList.remove(name);
         Song song = score.songs.songlist.get(name);
         song.status=1;
         song.score=song.score+2;
-        score.songs.songlist.put(name, song);
-        sortingList.add(name);
+        needChange=1;       //need to resort the play list
     }
-    //public void  sortList(){
-      //  sortingList.addAll(listSong);     //Add all the songs to the sort list
-    //}
 }
