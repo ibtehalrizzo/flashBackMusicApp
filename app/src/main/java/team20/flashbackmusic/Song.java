@@ -7,12 +7,13 @@ package team20.flashbackmusic;
 public class Song {
 
     //private members of song
-    private String songName, artist, mostRecentDateTime,mostRecentLocation;
+    private String title, artist, album, mostRecentDateTime,mostRecentLocation;
     private int score, status;
+    private long duration;
 
 
     //constructor of song
-    public Song(String name, String artist){
+    public Song(String title, String artist, String album, long duration) {
         mostRecentDateTime = null;
         mostRecentLocation = null;
 
@@ -23,19 +24,28 @@ public class Song {
         //initialize with score 0 because the music has not been
         //played
         score = 0;
+
+        this.title = title;
+        this.artist = artist;
+        this.album = album;
+
+        // Convert duration to time
+        this.duration = duration;
     }
 
 
     // GETTER AND SETTER METHOD //
-    public String getName()
+    public String getTitle()
     {
-        return songName;
+        return title;
     }
 
     public String getArtist()
     {
         return artist;
     }
+
+    public String getAlbum() { return album; }
 
     public String getRecentDateTime()
     {
@@ -60,5 +70,6 @@ public class Song {
     public void setScore(int s) { score = s; }
 
     public void setStatus(int s) { status = s; }
+
 
 }

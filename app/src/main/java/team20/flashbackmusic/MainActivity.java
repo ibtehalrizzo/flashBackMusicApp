@@ -1,6 +1,5 @@
 package team20.flashbackmusic;
 
-import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -13,9 +12,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -25,17 +26,19 @@ public class MainActivity extends AppCompatActivity {
 
     private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
     private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
+    private final int SONG_ALBUM = MediaMetadataRetriever.METADATA_KEY_ALBUM;
+    private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
 
     private MediaPlayer mediaPlayer;
     private ListView listView;
     private ListAdapter listAdapter;
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
     private TextView nowPlayingView, locationView, durationView;
-    private Cursor cursor;
-//    private Hashtable<Integer, String> songTitle;
     // TODO: Change to List<Song> later
     private List<String> songList;
     private List<String> songTitleList;
+    private List<Song> songListObj;
+    private boolean flashbackFlag = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +46,21 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        Button flashbackButton = (Button) findViewById(R.id.fb);
+
+        flashbackButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (flashbackFlag) {
+                    flashbackFlag = false;
+                    Toast.makeText(MainActivity.this, "Flashback mode off", Toast.LENGTH_SHORT).show();
+                } else {
+                    flashbackFlag = true;
+                    Toast.makeText(MainActivity.this, "Flashback mode on", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         //Play or Pause button
         final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -60,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
         songList = new ArrayList<>();
         songTitleList = new ArrayList<>();
+        songListObj = new ArrayList<>();
 
         getMusic(songList, songTitleList);
 
@@ -69,22 +88,31 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if(!flashbackFlag){
+                    if (mediaPlayer != null) {
+                        mediaPlayer.release();
+                    }
 
-                if (mediaPlayer != null) {
-                    mediaPlayer.release();
+                    int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
+                    mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
+                    mediaPlayer.start();
+                    fab.setImageResource(R.drawable.ic_pause_black_24dp);
+
+
+
+                    //hover the now playing text view
+                    String repeat = new String(new char[1]).replace("\0", " ");
+                    nowPlayingView.setText(repeat+ songTitleList.get(i) + repeat);
+                    nowPlayingView.setSelected(true);
+                }
+                else
+                {
+                    //TODO: add pop up message where the user need to press ok
+                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
+                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
                 }
 
-                int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
-                mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-                mediaPlayer.start();
-                fab.setImageResource(R.drawable.ic_pause_black_24dp);
 
-
-
-                //hover the now playing text view
-                String repeat = new String(new char[1]).replace("\0", " ");
-                nowPlayingView.setText(repeat+ songTitleList.get(i) + repeat);
-                nowPlayingView.setSelected(true);
             }
         });
 
@@ -125,6 +153,31 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    public String convertMillisecondsToTime(long milliseconds) {
+        String finalTimerString = "";
+        String secondsString;
+
+        int hours = (int) (milliseconds / 1000*60*60);
+        int minutes = (int) (milliseconds % (1000*60*60) / (1000*60*60));
+        int seconds = (int) (milliseconds % (1000*60*60) % (1000*60*60) / 1000);
+
+        // Add hours
+        if (hours > 0) {
+            finalTimerString = hours + ":";
+        }
+
+
+        if (seconds < 10) {
+            secondsString = "0" + seconds;
+        } else {
+            secondsString = "" + seconds;
+        }
+
+        finalTimerString = finalTimerString + minutes + ":" + secondsString;
+
+        return finalTimerString;
     }
 
 
@@ -168,19 +221,29 @@ public class MainActivity extends AppCompatActivity {
             String songFilename = fields[i].getName();
             songList.add(songFilename);
 
-
             int resId = getResources().getIdentifier(songFilename, "raw", getPackageName());
 
             Uri mediaPath = Uri.parse("android.resource://" + getPackageName() +
                     "/" + resId);
             mmr.setDataSource(this, mediaPath);
-            String title = mmr.extractMetadata(SONG_TITLE) +" - "
-                            + mmr.extractMetadata(SONG_ARTIST);
-//            songList.add(title);
-            songTitleList.add(title);
 
-//            songTitle.put(resId, title);
 
+            //add list of song objects
+            String title = mmr.extractMetadata(SONG_TITLE);
+            String artist = mmr.extractMetadata(SONG_ARTIST);
+            String album = mmr.extractMetadata(SONG_ALBUM);
+            String duration = mmr.extractMetadata(SONG_DURATION);
+
+            long durationToLong = Long.parseLong(duration);
+
+            Song s = new Song(title, artist, album, durationToLong);
+            songListObj.add(s);
+
+
+            //add to list for display TODO: we can get data from song object instead
+            String display = mmr.extractMetadata(SONG_TITLE) +" - "
+                    + mmr.extractMetadata(SONG_ARTIST);
+            songTitleList.add(display);
 
         }
 
