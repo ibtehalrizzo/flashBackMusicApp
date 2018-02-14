@@ -29,9 +29,10 @@ public class MainActivity extends AppCompatActivity {
 
     private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
     private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
-    private MediaPlayer mediaPlayer;
+    private MediaPlayer mediaPlayer = new MediaPlayer();
     private ListView listView;
     private ListAdapter listAdapter;
+    private int currentindex = 0;
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
     private TextView nowPlayingView, locationView, durationView;
     private Cursor cursor;
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
+                currentindex = i;
                 if (mediaPlayer != null) {
                     mediaPlayer.release();
                 }
@@ -106,7 +107,12 @@ public class MainActivity extends AppCompatActivity {
                 playTracksOrder(songList);
             }
         });
-
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mediaPlayer) {
+                next(songList);
+            }
+        });
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -243,29 +249,57 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-
-    public void playTracksOrder(final List<String> playlist){
-        listView.setEnabled(false);
-        String repeat = new String(new char[1]).replace("\0", " ");
-        nowPlayingView.setText(repeat+ songTitleList.get(3) + repeat);
-        nowPlayingView.setSelected(true);
-        for(int i=3;i<playlist.size();i++) {
-            int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
+    public void next(final List<String> playlist){
+        currentindex++;
+        if(currentindex<playlist.size()) {
+            String repeat = new String(new char[1]).replace("\0", " ");
+            nowPlayingView.setText(repeat + songTitleList.get(currentindex) + repeat);
+            nowPlayingView.setSelected(true);
+            //for(int i=3;i<playlist.size();i++) {
+            int resID = getResources().getIdentifier(songList.get(currentindex), "raw", getPackageName());
             mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
             mediaPlayer.start();
-            int k=0;
-            while(mediaPlayer.isPlaying()) {
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mediaPlayer) {
+                    next(songList);
+                }
+            });
+        }
+    }
+    public void playTracksOrder(final List<String> playlist){
+        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+        }
+        currentindex = 3;
+        listView.setEnabled(false);
+        String repeat = new String(new char[1]).replace("\0", " ");
+        nowPlayingView.setText(repeat+ songTitleList.get(currentindex) + repeat);
+        nowPlayingView.setSelected(true);
+        //for(int i=3;i<playlist.size();i++) {
+        int resID = getResources().getIdentifier(songList.get(currentindex), "raw", getPackageName());
+        mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
+        mediaPlayer.start();
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mediaPlayer) {
+                next(songList);
+            }
+        });
+            //int k=0;
+            //while(mediaPlayer.isPlaying()) {
                // nowPlayingView.setText(repeat+ songTitleList.get(i) + repeat);
                 //nowPlayingView.setSelected(true);
-            }
+            //}
             //mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
               //  @Override
                 //public void onCompletion(MediaPlayer mediaPlayer) {
                   //  mediaPlayer.release();
                 //}
             //});
-        }
-        listView.setEnabled(true);
+        //}
+        //listView.setEnabled(true);
     }
 
 
