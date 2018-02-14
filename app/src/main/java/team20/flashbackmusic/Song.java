@@ -8,12 +8,12 @@ public class Song {
 
     //private members of song
     private String title, artist, album, mostRecentDateTime,mostRecentLocation;
-    private int score, status;
+    private int score, status, songResId;
     private long duration;
 
 
     //constructor of song
-    public Song(String title, String artist, String album, long duration) {
+    public Song(String title, String artist, String album, long duration, int id) {
         mostRecentDateTime = null;
         mostRecentLocation = null;
 
@@ -28,6 +28,7 @@ public class Song {
         this.title = title;
         this.artist = artist;
         this.album = album;
+        this.songResId = id;
 
         // Convert duration to time
         this.duration = duration;
@@ -66,6 +67,11 @@ public class Song {
     {
         return score;
     }
+
+    public int getSongResId(){return songResId;}
+
+
+
 
     public void setScore(int s) { score = s; }
 
