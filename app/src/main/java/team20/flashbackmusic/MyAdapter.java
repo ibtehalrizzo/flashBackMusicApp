@@ -65,12 +65,12 @@ public class MyAdapter extends BaseAdapter implements ListAdapter {
             public void onClick(View v) {
                 //do something
                 if(buttonimage==1) {
-                    MainActivity.playList_flashback.changeToFavorite(list.get(position));
+             //       MainActivity.playList_flashback.changeToFavorite(list.get(position));
                     addBtn.setBackgroundResource(R.drawable.check);
                     buttonimage =2;
                 }
                 else if(buttonimage==2){
-                    MainActivity.playList_flashback.changeToDislike(list.get(position));
+               //     MainActivity.playList_flashback.changeToDislike(list.get(position));
                     addBtn.setBackgroundResource(R.drawable.cross);
                     buttonimage = 3;
                 }
