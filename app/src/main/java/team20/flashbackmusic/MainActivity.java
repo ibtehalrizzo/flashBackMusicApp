@@ -1,5 +1,6 @@
 package team20.flashbackmusic;
 
+
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -7,6 +8,7 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,31 +34,38 @@ public class MainActivity extends AppCompatActivity {
     private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
 
     private MediaPlayer mediaPlayer;
+    private FloatingActionButton  playButton;
+    private Button flashbackButton;
 
     // List of songs
     private ListView listView;
     private ListAdapter listAdapter;
 
-    // List of albums
+    // List of albums view
     private GridView albumView;
     private ListAdapter albumAdapter;
 
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-    private TextView nowPlayingView, locationView, durationView;
-    // TODO: Change to List<Song> later
-    private List<String> songList;
-    private List<String> songTitleList;
 
-    private List<Song> songListObj;
+    //TextViews of this activity
+    private TextView nowPlayingView, locationView, durationView;
+
+
+    //list of songs according to purpose
+    private List<String> songList; //to play music
+    private List<String> songTitleList; //for display
+    private List<Song> songListObj; //for storage of songs
 
 
     //Create list of albums
-    private Hashtable<String, Album> albumList;
+    private Hashtable<String, Album> albumList; //for checking if album exist
     private ArrayList<Album> tempListAlbum;
 
 
     private boolean flashbackFlag = false;
     private boolean playingAlbumFlag = false;
+    private Album albumToPlay;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +74,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        Button flashbackButton = (Button) findViewById(R.id.fb);
+        //set up media player
+        mediaPlayer = new MediaPlayer();
 
+        flashbackButton = (Button) findViewById(R.id.fb);
         flashbackButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -80,8 +91,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
         //Play or Pause button
-        final FloatingActionButton playButton = (FloatingActionButton) findViewById(R.id.playButton);
+        playButton = (FloatingActionButton) findViewById(R.id.playButton);
 
         // Init tag to play (TODO: should change to previously closed state)
         playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
@@ -91,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
         durationView = (TextView) findViewById(R.id.songDuration);
 
         albumView = (GridView) findViewById(R.id.albumList);
-
 
         // Make list
         listView = (ListView) findViewById(R.id.songList);
@@ -119,25 +130,24 @@ public class MainActivity extends AppCompatActivity {
                 // Disable album queue
                 playingAlbumFlag = false;
 
-                if(!flashbackFlag){
+                if (!flashbackFlag) {
                     if (mediaPlayer != null) {
                         mediaPlayer.release();
+                        mediaPlayer = null;
                     }
 
                     int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
                     mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                     mediaPlayer.start();
+
                     playButton.setImageResource(R.drawable.ic_pause_black_24dp);
-
-
+                    playButton.setTag(R.drawable.ic_pause_black_24dp);
 
                     //hover the now playing text view
                     String repeat = new String(new char[1]).replace("\0", " ");
                     nowPlayingView.setText(repeat + songTitleList.get(i) + repeat);
                     nowPlayingView.setSelected(true);
-                }
-                else
-                {
+                } else {
                     //TODO: add pop up message where the user need to press ok
                     Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
                             "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
@@ -153,75 +163,37 @@ public class MainActivity extends AppCompatActivity {
         albumAdapter = new ArrayAdapter<>(this, android.R.layout.simple_expandable_list_item_1, tempListAlbum);
         albumView.setAdapter(albumAdapter);
 
-        //set on item click listener
+
+        //set on item click listener for album list
         albumView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
+                Log.d("album:", "album is clicked!");
                 // Enable album queue
                 playingAlbumFlag = true;
 
-                if (!flashbackFlag)
-                {
+                if (!flashbackFlag) {
                     if (mediaPlayer != null) {
                         mediaPlayer.release();
+                        mediaPlayer = null;
                     }
 
-                    final Album albumToPlay = tempListAlbum.get(i);
+                    //get album to play
+                    albumToPlay = tempListAlbum.get(i);
+                    albumToPlay.clearQueue();
+                    //queue all songs to play in album
                     albumToPlay.queueAllSong();
 
-//                    while(!albumToPlay.isQueueEmpty() && mediaPlayer.isPlaying())
-//                    {
-                        Song songToPlay = albumToPlay.getNextSongToPlay();
-                        int resID = songToPlay.getSongResId();
-                        mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-                        mediaPlayer.start();
-                        playButton.setImageResource(R.drawable.ic_pause_black_24dp);
-
-                        //hover the now playing text view TODO: make this a method
-                        String repeat = new String(new char[1]).replace("\0", " ");
-                        String currentPlayingSongDisplay = songToPlay.getTitle() + " - " + songToPlay.getArtist();
-                        nowPlayingView.setText(repeat + currentPlayingSongDisplay + repeat);
-                        nowPlayingView.setSelected(true);
+                    playAlbum();
 
 
-//                        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-//                            @Override
-//                            public void onCompletion(MediaPlayer mediaPlayer) {
-//                                if (playingAlbumFlag)
-//                                {
-//                                    nowPlayingView.setText("hello");
-//                                }
-//                            }
-//                        });
-
-//                    }
-
-                }
-                else
-                {
+                } else {
                     Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
                             "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
                 }
             }
 
         });
-
-
-        // Play next song after song ends
-//        if(mediaPlayer != null)
-//        {
-//            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-//                @Override
-//                public void onCompletion(MediaPlayer mediaPlayer) {
-//                    if (playingAlbumFlag)
-//                    {
-//                        nowPlayingView.setText("hello");
-//                    }
-//                }
-//            });
-//        }
-
 
 
         playButton.setOnClickListener(new View.OnClickListener() {
@@ -231,31 +203,24 @@ public class MainActivity extends AppCompatActivity {
                 //Replace with play the current music played
                 //or just change to pause button if there is no music
                 //selected
-                if(mediaPlayer != null)
-                {
+                if (mediaPlayer != null) {
                     if (mediaPlayer.isPlaying()) {
                         mediaPlayer.pause();
-                        nowPlayingView.setSelected(false);
                         playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
 
-                    }
-                    else
-                    {
+                    } else {
                         mediaPlayer.start();
                         nowPlayingView.setSelected(true);
                         playButton.setImageResource(R.drawable.ic_pause_black_24dp);
+                        playButton.setTag(R.drawable.ic_pause_black_24dp);
 
                     }
-                }
-                else
-                {
-                    if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp))
-                    {
+                } else {
+                    if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp)) {
                         playButton.setImageResource(R.drawable.ic_pause_black_24dp);
                         playButton.setTag(R.drawable.ic_pause_black_24dp);
-                    }
-                    else
-                    {
+                    } else {
                         playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
                         playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
                     }
@@ -266,75 +231,39 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //TODO: cite source
     public String convertMillisecondsToTime(long milliseconds) {
         String finalTimerString = "";
         String secondsString;
 
-        int hours = (int) (milliseconds / 1000*60*60);
-        int minutes = (int) (milliseconds % (1000*60*60) / (1000*60*60));
-        int seconds = (int) (milliseconds % (1000*60*60) % (1000*60*60) / 1000);
+        int hours = (int) (milliseconds / 1000 * 60 * 60);
+        int minutes = (int) (milliseconds % (1000 * 60 * 60) / (1000 * 60 * 60));
+        int seconds = (int) (milliseconds % (1000 * 60 * 60) % (1000 * 60 * 60) / 1000);
 
         // Add hours
         if (hours > 0) {
             finalTimerString = hours + ":";
         }
-
-
         if (seconds < 10) {
             secondsString = "0" + seconds;
-        }
-        else {
+        } else {
             secondsString = "" + seconds;
         }
-
         finalTimerString = finalTimerString + minutes + ":" + secondsString;
-
         return finalTimerString;
     }
 
 
-    // TODO: Pull metadata from mp3 and send to Song.
-//    public void getMusic(List songList)
-//    {
-//        Field[] fields = R.raw.class.getFields();
-//
-//        Context c = getBaseContext();
-//        ContentResolver contentResolver = getContentResolver();
-//
-////        cursor = contentResolver.query(
-////                MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
-////                null, null, null, null);
-//
-////        cursor.moveToFirst();
-////        if (cursor != null) {
-////            while (cursor.moveToNext()) {
-////                Log.d(cursor.getString(cursor.getPosition()), "test song list: ");
-////            }
-////        }
-//        for(cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext())
-//        {
-////            Log.d(cursor.getString(cursor.getPosition()), "test song list: ");
-//            String test = cursor.getString(0);
-//            Log.d("tester", test);
-//        }
-//
-////        while (cursor.moveToNext()) {
-////            songList.add(cursor.getString(2));
-////        }
-//
-//    }
-
-//    Old getMusic method
-    public void getMusic(List songList, List songTitleList)
-    {
+    public void getMusic(List songList, List songTitleList) {
         Field[] fields = R.raw.class.getFields();
 
         for (int i = 0; i < fields.length; i++) {
             String songFilename = fields[i].getName();
+
             songList.add(songFilename);
 
-            int resId = getResources().getIdentifier(songFilename, "raw", getPackageName());
 
+            int resId = getResources().getIdentifier(songFilename, "raw", getPackageName());
             Uri mediaPath = Uri.parse("android.resource://" + getPackageName() +
                     "/" + resId);
             mmr.setDataSource(this, mediaPath);
@@ -346,6 +275,11 @@ public class MainActivity extends AppCompatActivity {
             String album = mmr.extractMetadata(SONG_ALBUM);
             String duration = mmr.extractMetadata(SONG_DURATION);
 
+            if(artist == null)
+                artist = "Unknown Artist";
+            if(album == null)
+                album = "Unknown Album";
+
             long durationToLong = Long.parseLong(duration);
 
             Song s = new Song(title, artist, album, durationToLong, resId);
@@ -353,8 +287,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             //add to list for display TODO: we can get data from song object instead
-            String display = mmr.extractMetadata(SONG_TITLE) +" - "
-                    + mmr.extractMetadata(SONG_ARTIST);
+            String display = title + " - " + artist;
             songTitleList.add(display);
 
         }
@@ -363,22 +296,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //precondition: tracks is already populated
-    public void populateAlbum(List<Song> songListObj, Hashtable<String, Album> albumList){
-        for(int i = 0; i < songListObj.size(); i++)
-        {
+    public void populateAlbum(List<Song> songListObj, Hashtable<String, Album> albumList) {
+        for (int i = 0; i < songListObj.size(); i++) {
             String albumName = songListObj.get(i).getAlbum();
-            if(!albumList.contains(albumName))
-            {
+            if (!albumList.containsKey(albumName)) {
                 //create album
                 Album newAlbum = new Album(albumName);
                 //add current track
                 newAlbum.addTrack(songListObj.get(i));
 
                 albumList.put(albumName, newAlbum);
-            }
-            else
-            {
-                //add current track to album
+            } else {
                 albumList.get(albumName).addTrack(songListObj.get(i));
             }
         }
@@ -411,6 +339,58 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //pre condition album has at least 1 song
+    public void playAlbum()
+    {
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        Song songToPlay = albumToPlay.getNextSongToPlay();
+        int resID = songToPlay.getSongResId();
+
+        mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
+        mediaPlayer.start();
+
+
+        //set button tag
+        playButton.setImageResource(R.drawable.ic_pause_black_24dp);
+        playButton.setTag(R.drawable.ic_pause_black_24dp);
+
+        //hover the now playing text view TODO: make this a method
+        String repeat = new String(new char[1]).replace("\0", " ");
+        String currentPlayingSongDisplay = songToPlay.getTitle() + " - " + songToPlay.getArtist();
+        nowPlayingView.setText(repeat + currentPlayingSongDisplay + repeat);
+        nowPlayingView.setSelected(true);
+
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                Log.d("onCompletionCalled", "yes!");
+                if (playingAlbumFlag) {
+                    //TODO: there is a bug when playing the next song, can't pause
+                    //TODO: need to make this listener outside
+//                    Log.d("onCompletionCalled", "yes!");
+                    if (!albumToPlay.isQueueEmpty()) {
+                        playAlbum();
+                    } else {
+                        playingAlbumFlag = false;
+                        //set button tag
+                        playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
+                    }
+
+                } else {
+                    //set button tag
+                    playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                    playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
+                }
+            }
+        });
+
+    }
 
 
 

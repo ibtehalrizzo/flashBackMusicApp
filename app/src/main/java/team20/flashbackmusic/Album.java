@@ -37,6 +37,12 @@ public class Album {
         }
     }
 
+    public void clearQueue()
+    {
+        queueTrackPlaying.clear();
+    }
+
+
     public boolean isQueueEmpty()
     {
         return queueTrackPlaying.isEmpty();
