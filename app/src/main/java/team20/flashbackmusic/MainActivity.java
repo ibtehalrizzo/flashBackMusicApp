@@ -23,9 +23,10 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import java.util.TimerTask;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.security.PublicKey;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import android.Manifest;
 import android.location.Criteria;
 import android.content.Context;
 import java.util.Date;
+import java.util.Timer;
 import android.content.pm.PackageManager;
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
@@ -52,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private MediaPlayer mediaPlayer;
     private FloatingActionButton  playButton;
     private Button flashbackButton;
+
 
     // List of songs
     private ListView listView;
@@ -83,10 +86,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private Album albumToPlay;
     private LocationManager locationManager;
     private int currentPlayingSongIndex = -1;
+    private int currentUserMNEIndex = -1;
+    private int currentUserDayOfWeek = -1;
+    private Location currentUserlocation;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        detectTimeChanges();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -103,7 +110,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             Log.d("test1", "ins");
             return;
         } else {
-
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                     0, 100, this);
         }
@@ -439,29 +445,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     @Override
     public void onLocationChanged(Location location) {
-        if(location != null) {
-            double latitude = location.getLatitude();
-            double longitude = location.getLongitude();
-            String finalString = null;
-            try {
-                finalString = getAddress(latitude, longitude);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (currentPlayingSongIndex != -1) {
-                Song song = songListObj.get(currentPlayingSongIndex);
-                song.setMostRecentDateTime(finalString);
-                if (!song.locationHistory.contains(location)) {
-                    Iterator<Location> itr = song.locationHistory.iterator();
-                    while (itr.hasNext()) {
-                        if (itr.next().distanceTo(location) >= 30.48) {
-                            song.locationHistory.add(location);
+        if(flashbackFlag) {
+            if (location != null) {
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                String finalString = null;
+                try {
+                    finalString = getAddress(latitude, longitude);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                currentUserlocation = location;
+                if (currentPlayingSongIndex != -1) {
+                    Song song = songListObj.get(currentPlayingSongIndex);
+                    song.setMostRecentDateTimeString(finalString);
+                    if (!song.locationHistory.contains(location)) {
+                        Iterator<Location> itr = song.locationHistory.iterator();
+                        while (itr.hasNext()) {
+                            if (itr.next().distanceTo(location) >= 30.48) {
+                                song.locationHistory.add(location);
+                            }
                         }
                     }
                 }
             }
         }
-
     }
 
     @Override
@@ -481,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     public void showDateAndTime(Song song){
         if(song.getMostRecentDateTime() != null){
-            dateTimeView.setText(song.getMostRecentDateTime());
+            dateTimeView.setText(song.getMostRecentDateTimeString());
         }
         else{
             dateTimeView.setText("No Last Current Time and Date are available");
@@ -491,7 +499,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void showCurrentLocation(Song song){
         if(song.getMostRecentLocation() != null){
 
-            locationView.setText(song.getMostRecentLocation());
+            locationView.setText(song.getMostRecentLocationString());
         }
         else{
             locationView.setText("No Last Current location is available");
@@ -499,20 +507,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     }
     public void storeDateAndTime(Song song){
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("kk:mm:ss MMM dd yyyy");
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("kk:mm:ss   dd MMM yyyy");
         String dateAndTime = dateFormatter.format(new Date());
-        song.setMostRecentDateTime(dateAndTime);
+        song.setMostRecentDateTime(new Date());
+        song.setMostRecentDateTimeString(dateAndTime);
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        if(4<=hour && hour < 12 ){
-            hour = 1;
-        }
-        else if(12<=hour && hour < 20 ){
-            hour = 2;
-        }
-        else{
-            hour = 3;
-        }
+        hour = convertToMNEIndex(hour);
         if(!song.timeHistory.contains(hour)){
             song.timeHistory.add(hour);
         }
@@ -556,7 +557,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
                 String finalString = getAddress(latitude, longitude);
-                song.setMostRecentLocation(finalString);
+                song.setMostRecentLocationString(finalString);
+                song.setMostRecentLocation(location);
                 if(!song.locationHistory.contains(location)){
                     Iterator<Location> itr = song.locationHistory.iterator();
                     while(itr.hasNext()){
@@ -567,5 +569,47 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 }
             }
         }
+    }
+
+    public int convertToMNEIndex(int hour){
+        if(4<=hour && hour < 12 ){
+            hour = 1;
+        }
+        else if(12<=hour && hour < 20 ){
+            hour = 2;
+        }
+        else{
+            hour = 3;
+        }
+        return hour;
+    }
+
+    public void setCurrentUserMNEAndDay(){
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        currentUserDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        currentUserMNEIndex = convertToMNEIndex(hour);
+
+    }
+    public void detectTimeChanges(){
+        setCurrentUserMNEAndDay();
+        Calendar calendar = Calendar.getInstance();
+        int min = calendar.get(Calendar.MINUTE);
+        int timeDelay = 1000*60*(60 - min);
+        Timer timerDelay = new Timer();
+        timerDelay.schedule(new TimerTask() {
+            public void run() {
+                Timer hourlyTime = new Timer ();
+                TimerTask hourlyTask = new TimerTask () {
+                    @Override
+                    public void run () {
+                        setCurrentUserMNEAndDay();
+                    }
+                };
+                hourlyTime.schedule (hourlyTask, 0l, 1000*60*60);
+
+            }
+
+        }, timeDelay);
     }
 }

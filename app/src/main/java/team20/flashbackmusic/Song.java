@@ -1,6 +1,9 @@
 package team20.flashbackmusic;
 import android.location.Location;
+import android.location.LocationManager;
+
 import java.util.HashSet;
+import java.util.Date;
 
 /**
  * Created by dhoei on 06/02/18.
@@ -9,7 +12,9 @@ import java.util.HashSet;
 public class Song {
 
     //private members of song
-    private String title, artist, album, mostRecentDateTime,mostRecentLocation;
+    private String title, artist, album, mostRecentDateTimeString,mostRecentLocationString;
+    Date mostRecentDateTime;
+    Location mostRecentLocation;
     private int score, status, songResId;
     public HashSet<Location> locationHistory;
     public HashSet<Integer> dayHistory;  // 1-Monday 2-Tuesday 3-Wednesday 4- Thursday 5-Friday 6-Saturday 7-Sunday
@@ -22,6 +27,8 @@ public class Song {
     public Song(String title, String artist, String album, long duration, int id) {
         mostRecentDateTime = null;
         mostRecentLocation = null;
+        mostRecentDateTimeString = null;
+        mostRecentLocationString = null;
 
         locationHistory = new HashSet<>();
         dayHistory = new HashSet<>();
@@ -70,18 +77,32 @@ public class Song {
 
     public int getSongResId(){return songResId;}
 
-    public String getMostRecentDateTime(){
+    public String getMostRecentDateTimeString(){
+        return this.mostRecentDateTimeString;
+    }
+    public String getMostRecentLocationString(){
+        return this.mostRecentLocationString;
+    }
+    public void setMostRecentDateTimeString(String mostRecentDateTimeString){
+        this.mostRecentDateTimeString = mostRecentDateTimeString;
+    }
+    public void setMostRecentLocationString(String mostRecentLocationString){
+        this.mostRecentLocationString = mostRecentLocationString;
+    }
+
+    public Date getMostRecentDateTime(){
         return this.mostRecentDateTime;
     }
-    public String getMostRecentLocation(){
+    public Location getMostRecentLocation(){
         return this.mostRecentLocation;
     }
-    public void setMostRecentDateTime(String mostRecentDateTime){
+    public void setMostRecentDateTime(Date mostRecentDateTime){
         this.mostRecentDateTime = mostRecentDateTime;
     }
-    public void setMostRecentLocation(String mostRecentLocation){
-        this.mostRecentLocation = mostRecentLocation;
+    public void setMostRecentLocation(Location location){
+        this.mostRecentLocation = location;
     }
+
 
 
 
