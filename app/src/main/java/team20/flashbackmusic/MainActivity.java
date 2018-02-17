@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             final TextView listItemText = (TextView) v.findViewById(R.id.list_item_string);
             listItemText.setText(list.get(position));
 
-            addBtn = (Button) findViewById(R.id.add_btn);
+            addBtn = (Button) v.findViewById(R.id.add_btn);
             addBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -520,8 +520,10 @@ public class MainActivity extends AppCompatActivity {
     }
     public void next(final List<String> playlist){
         currentindex++;
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying())
+        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
+            mediaPlayer.release();
+        }
         if(currentindex<playlist.size()) {
             String repeat = new String(new char[1]).replace("\0", " ");
             nowPlayingView.setText(repeat + songTitleList.get(currentindex) + repeat);
@@ -539,8 +541,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public void previous(final List<String> playlist){
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying())
+        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
+            mediaPlayer.release();
+        }
         currentindex--;
         if(currentindex>=0) {
             String repeat = new String(new char[1]).replace("\0", " ");
