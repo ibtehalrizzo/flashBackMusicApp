@@ -27,21 +27,21 @@ public class Score {
         for (int i = 0; i < len; i++) {
                 String name = listSong.get(i);
                 Song song = songs.songlist.get(name);
-                song.score = 0;
-                HashSet<Location> locationHistory = song.locationHistory;    //get location and time history of corresponding song
-                HashSet<Integer> dayHistory = song.dayHistory;
-                HashSet<Integer> timeHistory = song.timeHistory;
-                int status = song.status;
+                song.setScore(0);
+                HashSet<Location> locationHistory = song.getLocationHistory();    //get location and time history of corresponding song
+                HashSet<Integer> dayHistory = song.getDayHistory();
+                HashSet<Integer> timeHistory = song.getTimeHistory();
+                int status = song.getStatus();
                 if (locationHistory.contains(location))            //If location is the same, score increase
-                    song.score++;
+                    song.setScore(song.getScore()+1);
                 if (timeHistory.contains(time))          //If time is the same, score increase
-                    song.score++;
+                    song.setScore(song.getScore()+1);
                 if (dayHistory.contains(day))    //If the song was played in the same day, score increase
-                    song.score++;
+                    song.setScore(song.getScore()+1);
                 if (status == 1)                 //If the song is favorite, score increase
-                    song.score = song.score+2;
+                    song.setScore(song.getScore()+2);
                 else if (status == -1)           //If the song is disliked, not play it
-                    song.score = -1;
+                    song.setScore(-1);
                 songs.songlist.put(name,song);
             }
         }

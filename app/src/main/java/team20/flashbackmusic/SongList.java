@@ -12,6 +12,6 @@ public class SongList {
         songlist = new Hashtable<String, Song>();
     }
     public void add(Song song){
-        songlist.put(song.songName,song);
+        songlist.put(song.getTitle(),song);
     }
 }
