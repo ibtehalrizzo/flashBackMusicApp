@@ -55,6 +55,10 @@ public class Album {
         return queueTrackPlaying.remove();
     }
 
+    public Song getCurrentSongInQueue() {
+        return queueTrackPlaying.peek();
+    }
+
     public String toString()
     {
         return name;
