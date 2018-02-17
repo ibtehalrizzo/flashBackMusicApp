@@ -4,6 +4,7 @@ import android.location.Location;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -15,8 +16,8 @@ public class Score {
     ArrayList<Song> songs;
     public Score(){}
     public Score(List<String> listSong, List<Song> songs) {   //add the tracks from the album to the score
-        listSong =new ArrayList<String>(listSong);
-        songs = new ArrayList<>(songs);
+        this.listSong =new ArrayList<String>(listSong);
+        this.songs = new ArrayList<>(songs);
         //Create score system
     }
 
@@ -33,8 +34,16 @@ public class Score {
                 HashSet<Integer> dayHistory = song.getDayHistory();
                 HashSet<Integer> timeHistory = song.getTimeHistory();
                 int status = song.getStatus();
-                if (locationHistory.contains(location))            //If location is the same, score increase
+                if (locationHistory.contains(location))          //If location is the same, score increase
                     song.setScore(song.getScore()+1);
+                else{
+                    Iterator<Location> itr = locationHistory.iterator();
+                    while (itr.hasNext()) {
+                        if (itr.next().distanceTo(location) <= 30.48) {
+                            song.setScore(song.getScore()+1);
+                        }
+                    }
+                }
                 if (timeHistory.contains(time))          //If time is the same, score increase
                     song.setScore(song.getScore()+1);
                 if (dayHistory.contains(day))    //If the song was played in the same day, score increase

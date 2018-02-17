@@ -1,14 +1,22 @@
 package team20.flashbackmusic;
 
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -29,13 +37,21 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LocationListener {
     class MyAdapter extends BaseAdapter implements ListAdapter {
         private ArrayList<String> list = new ArrayList<String>();
         private Context context;
@@ -94,9 +110,10 @@ public class MainActivity extends AppCompatActivity {
                             next(playList_flashback.sortingList);
                     } else {
                         songListObj.get(position).setStatus(0);
-                        //Location location;//                Location location;
-                        //Date time;//              Calendar time;
-                        //playList_flashback.changeToNeutral(position,location,time);//            MainActivity.playList_flashback.changeToNeutral(list.get(position),location, time);
+                        Location location = currentUserlocation;//                Location location;
+                        int day = currentUserDayOfWeek;//              Calendar time;
+                        int time = currentUserMNEIndex;
+                        playList_flashback.changeToNeutral(position,location,day, time);//            MainActivity.playList_flashback.changeToNeutral(list.get(position),location, time);
                         addBtn.setBackgroundResource(R.drawable.add);
                     }
                 }
@@ -128,8 +145,8 @@ public class MainActivity extends AppCompatActivity {
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
     //TextViews of this activity
-    private TextView nowPlayingView;
-    private TextView locationView, durationView;
+    private TextView nowPlayingView, locationView, durationView, dateTimeView;
+
 
 
     //list of songs according to purpose
@@ -145,9 +162,12 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Album> tempListAlbum;
 
 
-    private boolean flashbackFlag = false;
     private boolean playingAlbumFlag = false;
     private Album albumToPlay;
+    private LocationManager locationManager;
+    private int currentUserMNEIndex = -1;
+    private int currentUserDayOfWeek = -1;
+    private Location currentUserlocation;
 
 
     @Override
@@ -158,7 +178,20 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         //set up media player
         mediaPlayer = new MediaPlayer();
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
 
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    100);
+            Log.d("test1", "ins");
+            return;
+        } else {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                    0, 100, this);
+        }
         flashback = (Switch) findViewById(R.id.switch1);
         flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -170,10 +203,11 @@ public class MainActivity extends AppCompatActivity {
                     playButton.setClickable(true);
                     previousSong.setClickable(false);
                     listView.setEnabled(false);
-                    //Location location;
-                    //int time;
-                    //int day;
-                    //score.score(location,day,time);
+                    Location location = currentUserlocation;
+                    int time = currentUserMNEIndex;
+                    Log.d("ti",Integer.toString(time));
+                    int day = currentUserDayOfWeek;
+                    score.score(location, day, time);
                     playList_flashback.sorter();
                     sortingList = playList_flashback.sortingList;
                     playTracksOrder();
@@ -198,6 +232,9 @@ public class MainActivity extends AppCompatActivity {
         nowPlayingView = (TextView) findViewById(R.id.nowPlaying);
         locationView = (TextView) findViewById(R.id.playingLoc);
         durationView = (TextView) findViewById(R.id.songDuration);
+        dateTimeView = (TextView)findViewById(R.id.playingTime);
+        locationView = (TextView) findViewById(R.id.playingLoc);
+        durationView = (TextView) findViewById(R.id.songDuration);
 
         albumView = (GridView) findViewById(R.id.albumList);
 
@@ -213,7 +250,6 @@ public class MainActivity extends AppCompatActivity {
         //GET LIST OF SONGS FROM RAW DIRECTORY
         getMusic(songList, songTitleList);
         sortingList = new ArrayList<>(songList);
-        score = new Score(songList, songListObj);
         for (int i = 0; i < songList.size(); i++) {
             indexTosong.put(songList.get(i), i);
         }
@@ -233,11 +269,18 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
+                showCurrentLocation(songListObj.get(i));
+                showDateAndTime(songListObj.get(i));
+                storeDateAndTime(songListObj.get(i));
+                try {
+                    storeLocation(songListObj.get(i));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 // Disable album queue
                 playingAlbumFlag = false;
                 currentindex = i;
-                if (!flashbackFlag) {
+                if (!flashOn) {
                     if (mediaPlayer != null) {
                         mediaPlayer.release();
                         mediaPlayer = null;
@@ -295,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
                 // Enable album queue
                 playingAlbumFlag = true;
 
-                if (!flashbackFlag) {
+                if (!flashOn) {
                     if (mediaPlayer != null) {
                         mediaPlayer.release();
                         mediaPlayer = null;
@@ -516,9 +559,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
+    public void onLocationChanged(Location location) {
+        Log.d("loc",Double.toString(location.getLatitude()));
+        currentUserlocation = location;
+        if(flashOn) {
+            score.score(location, currentUserDayOfWeek,currentUserMNEIndex);
+            playList_flashback.sorter();
+            playTracksOrder();
+        }
+    }
     public void playTracksOrder() {
-
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
@@ -566,8 +616,7 @@ public class MainActivity extends AppCompatActivity {
                 next(playlist);
         } else {
             if (flashOn) {
-                currentindex = -1;
-                next(playlist);
+                playTracksOrder();
             }
             else {
                 return;
@@ -599,7 +648,147 @@ public class MainActivity extends AppCompatActivity {
         }
         else
             return;
+    }
 
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
+    }
+    public void showDateAndTime(Song song){
+        if(song.getMostRecentDateTime() != null){
+            dateTimeView.setText(song.getMostRecentDateTimeString());
+        }
+        else{
+            dateTimeView.setText("No Last Current Time and Date are available");
+        }
+
+    }
+    public void showCurrentLocation(Song song){
+        if(song.getMostRecentLocation() != null){
+
+            locationView.setText(song.getMostRecentLocationString());
+        }
+        else{
+            locationView.setText("No Last Current location is available");
+        }
+
+    }
+    public void storeDateAndTime(Song song){
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("kk:mm:ss   dd MMM yyyy");
+        String dateAndTime = dateFormatter.format(new Date());
+        song.setMostRecentDateTime(new Date());
+        song.setMostRecentDateTimeString(dateAndTime);
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        hour = convertToMNEIndex(hour);
+        if(!song.getTimeHistory().contains(hour)){
+            song.addTimeHistory(hour);
+        }
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+        if(!song.getDayHistory().contains(day)){
+            song.addDayHistory(day);
+        }
+
+    }
+
+    public String getAddress(double latitude, double longitude) throws IOException {
+        Geocoder geocoder;
+        List<Address> addresses = null;
+        geocoder = new Geocoder(this, Locale.getDefault());
+
+        try {
+            addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+        String state = addresses.get(0).getAdminArea();
+        String finalString = address + ", "+state;
+        return finalString;
+    }
+
+    public void storeLocation(Song song) throws IOException {
+        Criteria criteria = new Criteria();
+        String bestProvider =locationManager.getBestProvider(criteria,true);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    100);
+            Log.d("test1", "ins");
+            return;
+        }
+        else {
+            Location location = locationManager.getLastKnownLocation(bestProvider);
+            if(location != null){
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                String finalString = getAddress(latitude, longitude);
+                song.setMostRecentLocationString(finalString);
+                song.setMostRecentLocation(location);
+                if(!song.getLocationHistory().contains(location)){
+                    Iterator<Location> itr = song.getLocationHistory().iterator();
+                    while(itr.hasNext()){
+                        if(itr.next().distanceTo(location) >= 30.48){
+                            song.addLocationHistory(location);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public int convertToMNEIndex(int hour){
+        if(4<=hour && hour < 12 ){
+            hour = 1;
+        }
+        else if(12<=hour && hour < 20 ){
+            hour = 2;
+        }
+        else{
+            hour = 3;
+        }
+        return hour;
+    }
+
+    public void setCurrentUserMNEAndDay(){
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        currentUserDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        currentUserMNEIndex = convertToMNEIndex(hour);
+
+    }
+    public void detectTimeChanges(){
+        setCurrentUserMNEAndDay();
+        Calendar calendar = Calendar.getInstance();
+        int min = calendar.get(Calendar.MINUTE);
+        int timeDelay = 1000*60*(60 - min);
+        Timer timerDelay = new Timer();
+        timerDelay.schedule(new TimerTask() {
+            public void run() {
+                Timer hourlyTime = new Timer ();
+                TimerTask hourlyTask = new TimerTask () {
+                    @Override
+                    public void run () {
+                        setCurrentUserMNEAndDay();
+                    }
+                };
+                hourlyTime.schedule (hourlyTask, 0l, 1000*60*60);
+
+            }
+
+        }, timeDelay);
     }
 }
 

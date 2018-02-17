@@ -73,7 +73,15 @@
             android:text="Show Location"
             android:gravity="center"
             android:textAlignment="center"/>
-
+        <TextView
+            android:id="@+id/playingTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:textSize="14dp"
+            android:text="Show Time"
+            android:gravity="center"
+            android:textAlignment="center"/>
         <TextView
             android:id="@+id/songDuration"
             android:layout_width="match_parent"

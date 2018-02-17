@@ -13,7 +13,7 @@ import java.util.Set;
  */
 
 public class Song {
-    private String title, artist, album;
+    private String title, artist, album,mostRecentDateTimeString,mostRecentLocationString;
     private Date mostRecentDateTime;
     private Location mostRecentLocation; //don’t know yet
     private HashSet<Location> locationHistory;
@@ -107,9 +107,6 @@ public class Song {
     public void setMostRecentDateTime(Time time){
         mostRecentDateTime = time;
     }
-    public void setMostRecentLocation(Location location){
-        mostRecentLocation = location;
-    }
     public void addLocationHistory(Location location){
         locationHistory.add(location);
     }
@@ -120,5 +117,30 @@ public class Song {
 
     public void addTimeHistory(int time){
         timeHistory.add(time);
+    }
+    public String getMostRecentDateTimeString(){
+        return this.mostRecentDateTimeString;
+    }
+    public String getMostRecentLocationString(){
+        return this.mostRecentLocationString;
+    }
+    public void setMostRecentDateTimeString(String mostRecentDateTimeString){
+        this.mostRecentDateTimeString = mostRecentDateTimeString;
+    }
+    public void setMostRecentLocationString(String mostRecentLocationString){
+        this.mostRecentLocationString = mostRecentLocationString;
+    }
+
+    public Date getMostRecentDateTime(){
+        return this.mostRecentDateTime;
+    }
+    public Location getMostRecentLocation(){
+        return this.mostRecentLocation;
+    }
+    public void setMostRecentDateTime(Date mostRecentDateTime){
+        this.mostRecentDateTime = mostRecentDateTime;
+    }
+    public void setMostRecentLocation(Location location){
+        this.mostRecentLocation = location;
     }
 }
