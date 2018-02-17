@@ -3,6 +3,7 @@ package team20.flashbackmusic;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -73,24 +74,24 @@ public class MainActivity extends AppCompatActivity {
             }
 
             //Handle TextView and display string from your list
-            final TextView listItemText = (TextView)v.findViewById(R.id.list_item_string);
-            final Button addBtn = (Button)v.findViewById(R.id.add_btn);
+            final TextView listItemText = (TextView) v.findViewById(R.id.list_item_string);
+            final Button addBtn = (Button) v.findViewById(R.id.add_btn);
             listItemText.setText(list.get(position));
 
-           addBtn.setOnClickListener(new View.OnClickListener() {
+            addBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     //do something
-                   if (songListObj.get(position).getStatus() == 0) {
+                    if (songListObj.get(position).getStatus() == 0) {
                         addBtn.setBackgroundResource(R.drawable.check);
                         playList_flashback.changeToFavorite(position);//       MainActivity.playList_flashback.changeToFavorite(list.get(position));
                     } else if (songListObj.get(position).getStatus() == 1) {
                         playList_flashback.changeToDislike(position);//     MainActivity.playList_flashback.changeToDislike(list.get(position));
                         addBtn.setBackgroundResource(R.drawable.cross);
-                       if(flashOn&&playList_flashback.sortingList.get(currentindex).equals(songList.get(position)))
-                           next(playList_flashback.sortingList);
-                       else if(!flashOn&&currentindex==position&&mediaPlayer.isPlaying())
-                           next(playList_flashback.sortingList);
+                        if (flashOn && playList_flashback.sortingList.get(currentindex).equals(songList.get(position)))
+                            next(playList_flashback.sortingList);
+                        else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
+                            next(playList_flashback.sortingList);
                     } else {
                         songListObj.get(position).setStatus(0);
                         //Location location;//                Location location;
@@ -105,14 +106,15 @@ public class MainActivity extends AppCompatActivity {
             return v;
         }
     }
+
     private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
     private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
     private final int SONG_ALBUM = MediaMetadataRetriever.METADATA_KEY_ALBUM;
     private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
-    private int  currentindex = 0;
+    private int currentindex = 0;
     private ListView listView;
     private MediaPlayer mediaPlayer;
-    private FloatingActionButton  playButton;
+    private FloatingActionButton playButton;
     private Switch flashback;
     private FloatingActionButton nextSong;
     private FloatingActionButton previousSong;
@@ -122,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     // List of albums view
     private GridView albumView;
     private ListAdapter albumAdapter;
-    boolean flashOn = false;
+    private boolean flashOn = false;
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
     //TextViews of this activity
@@ -154,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         //set up media player
         mediaPlayer = new MediaPlayer();
 
@@ -162,18 +163,27 @@ public class MainActivity extends AppCompatActivity {
         flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked == true) {
+                if (!flashOn) {
                     flashOn = true;
+                    nextSong.setClickable(false);
+                    playButton.setTag(R.drawable.ic_pause_black_24dp);
+                    playButton.setClickable(true);
+                    previousSong.setClickable(false);
+                    listView.setEnabled(false);
+                    //Location location;
+                    //int time;
+                    //int day;
+                    //score.score(location,day,time);
                     playList_flashback.sorter();
                     sortingList = playList_flashback.sortingList;
                     playTracksOrder();
                 }
-                else{
+                else {
                     flashOn = false;
                     nextSong.setClickable(true);
-                    previousSong.setClickable(false);
+                    previousSong.setClickable(true);
                     mediaPlayer.stop();
-                    listView.setClickable(true);
+                    listView.setEnabled(true);
                 }
             }
         });
@@ -203,16 +213,17 @@ public class MainActivity extends AppCompatActivity {
         //GET LIST OF SONGS FROM RAW DIRECTORY
         getMusic(songList, songTitleList);
         sortingList = new ArrayList<>(songList);
-        for(int i=0;i<songList.size();i++){
-            indexTosong.put(songList.get(i),i);
+        score = new Score(songList, songListObj);
+        for (int i = 0; i < songList.size(); i++) {
+            indexTosong.put(songList.get(i), i);
         }
-        score = new Score(songList,songListObj);
-        playList_flashback = new PlayList_flashback(sortingList,songListObj,indexTosong);
+        score = new Score(songList, songListObj);
+        playList_flashback = new PlayList_flashback(sortingList, songListObj, indexTosong);
         //populate album after we get music
         populateAlbum(songListObj, albumList);
         MyAdapter adapter = new MyAdapter(songTitleList, this);
         //handle listview and assign adapter
-        listView = (ListView)findViewById(R.id.songList);
+        listView = (ListView) findViewById(R.id.songList);
         listView.setAdapter(adapter);
         //show list of song in the track list view
         //listAdapter = new ArrayAdapter<>(this, android.R.layout.simple_expandable_list_item_1, songTitleList);
@@ -256,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         nextSong.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(flashOn == false){
+                if (flashOn == false) {
                     next(songList);
                 }
             }
@@ -264,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
         previousSong.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(flashOn == false){
+                if (flashOn == false) {
                     previous(songList);
                 }
             }
@@ -391,9 +402,9 @@ public class MainActivity extends AppCompatActivity {
             String album = mmr.extractMetadata(SONG_ALBUM);
             String duration = mmr.extractMetadata(SONG_DURATION);
 
-            if(artist == null)
+            if (artist == null)
                 artist = "Unknown Artist";
-            if(album == null)
+            if (album == null)
                 album = "Unknown Album";
 
             long durationToLong = Long.parseLong(duration);
@@ -456,8 +467,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //pre condition album has at least 1 song
-    public void playAlbum()
-    {
+    public void playAlbum() {
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mediaPlayer = null;
@@ -504,18 +514,18 @@ public class MainActivity extends AppCompatActivity {
                     playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
                 }
             }
-        });}
-    public void playTracksOrder(){
-        nextSong.setClickable(false);
-        previousSong.setClickable(false);
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+        });
+    }
+
+    public void playTracksOrder() {
+
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
         }
         currentindex = 0;
-        listView.setEnabled(false);
         String repeat = new String(new char[1]).replace("\0", " ");
-        nowPlayingView.setText(repeat+ playList_flashback.sortingList.get(currentindex) + repeat);
+        nowPlayingView.setText(repeat + playList_flashback.sortingList.get(currentindex) + repeat);
         nowPlayingView.setSelected(true);
         //for(int i=3;i<playlist.size();i++) {
         int resID = getResources().getIdentifier(playList_flashback.sortingList.get(currentindex), "raw", getPackageName());
@@ -529,16 +539,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-    public void next(final List<String> playlist){
+
+    public void next(final List<String> playlist) {
         currentindex++;
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
-            mediaPlayer.release();
         }
-        if(currentindex<playlist.size()) {
+        if (currentindex < playlist.size()) {
             if (songListObj.get(indexTosong.get(playlist.get(currentindex))).getStatus() != -1) {
                 String repeat = new String(new char[1]).replace("\0", " ");
-                nowPlayingView.setText(repeat + playlist.get(currentindex) + repeat);
+                nowPlayingView.setText(repeat + songTitleList.get(indexTosong.get(playlist.get(currentindex))) + repeat);
                 nowPlayingView.setSelected(true);
                 //for(int i=3;i<playlist.size();i++) {
                 //mediaPlayer = MediaPlayer.create(MainActivity.this,resID);
@@ -551,42 +561,46 @@ public class MainActivity extends AppCompatActivity {
                         next(playlist);
                     }
                 });
-            } else
+            }
+            else
                 next(playlist);
-        }
-        else{
-            if(flashOn){
-                currentindex = 0;
+        } else {
+            if (flashOn) {
+                currentindex = -1;
                 next(playlist);
             }
-            else{
+            else {
                 return;
             }
         }
     }
-    public void previous(final List<String> playlist){
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+
+    public void previous(final List<String> playlist) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
-            mediaPlayer.release();
         }
         currentindex--;
-        if(currentindex>=0) {
-            String repeat = new String(new char[1]).replace("\0", " ");
-            nowPlayingView.setText(repeat + playlist.get(currentindex) + repeat);
-            nowPlayingView.setSelected(true);
-            //for(int i=3;i<playlist.size();i++) {
-            int resID = getResources().getIdentifier(playlist.get(currentindex), "raw", getPackageName());
-            mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-            mediaPlayer.start();
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mediaPlayer) {
-                    next(playlist);
-                }
-            });
+        if (currentindex >= 0) {
+            if (songListObj.get(indexTosong.get(playlist.get(currentindex))).getStatus() != -1) {
+                String repeat = new String(new char[1]).replace("\0", " ");
+                nowPlayingView.setText(repeat + songTitleList.get(indexTosong.get(playlist.get(currentindex))) + repeat);
+                nowPlayingView.setSelected(true);
+                //for(int i=3;i<playlist.size();i++) {
+                int resID = getResources().getIdentifier(playlist.get(currentindex), "raw", getPackageName());
+                mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
+                mediaPlayer.start();
+                mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mediaPlayer) {
+                        next(playlist);
+                    }
+                });
+            }
         }
-    }
+        else
+            return;
 
+    }
 }
 
 

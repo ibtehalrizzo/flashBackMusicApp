@@ -93,13 +93,14 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:scrollbarSize="40dp"
+        android:theme="@style/SwitchTheme"
         android:text="Flashback" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/playButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/nowPlayingLayout"
+        android:layout_alignTop="@+id/next"
         android:layout_centerHorizontal="true"
         app:srcCompat="@drawable/ic_play_arrow_black_24dp"
         tools:ignore="VectorDrawableCompat" />
@@ -110,6 +111,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/nowPlayingLayout"
         android:layout_marginStart="18dp"
+        android:layout_marginTop="29dp"
         android:layout_toEndOf="@+id/playButton"
         android:clickable="true"
         app:backgroundTint="@color/colorPrimary"
@@ -119,8 +121,8 @@
         android:id="@+id/previous"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/nowPlayingLayout"
-        android:layout_marginEnd="18dp"
+        android:layout_alignTop="@+id/playButton"
+        android:layout_marginEnd="12dp"
         android:layout_toStartOf="@+id/playButton"
         android:clickable="true"
         app:backgroundTint="@color/colorPrimaryDark"
