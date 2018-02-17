@@ -51,6 +51,8 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static android.widget.Toast.*;
+
 public class MainActivity extends AppCompatActivity implements LocationListener {
     class MyAdapter extends BaseAdapter implements ListAdapter {
         private ArrayList<String> list = new ArrayList<String>();
@@ -273,6 +275,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 showCurrentLocation(songListObj.get(i));
                 showDateAndTime(songListObj.get(i));
                 storeDateAndTime(songListObj.get(i));
+                nextSong.setClickable(true);
+                previousSong.setClickable(true);
                 try {
                     storeLocation(songListObj.get(i));
                 } catch (IOException e) {
@@ -300,8 +304,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     nowPlayingView.setSelected(true);
                 } else {
                     //TODO: add pop up message where the user need to press ok
-                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
-                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
+                    makeText(MainActivity.this, "You are in flashback mode!\n" +
+                            "Please go to normal mode to select music", LENGTH_SHORT).show();
                 }
 
 
@@ -312,6 +316,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onClick(View view) {
                 if (flashOn == false) {
+                    if(currentindex == songList.size()-1){
+                        currentindex = songList.size()-1;
+                        Toast lastSong = Toast.makeText(getApplicationContext(), "No next song available", Toast.LENGTH_SHORT);
+                        lastSong.show();
+                        return;
+                    }
                     next(songList);
                 }
             }
@@ -320,6 +330,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onClick(View view) {
                 if (flashOn == false) {
+                    if(currentindex==0){
+                        Toast firstSong = Toast.makeText(getApplicationContext(), "No previous song available", Toast.LENGTH_LONG);
+                        firstSong.show();
+                        return;
+                    }
                     previous(songList);
                 }
             }
@@ -338,7 +353,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Log.d("album:", "album is clicked!");
                 // Enable album queue
                 playingAlbumFlag = true;
-
+                nextSong.setClickable(false);
+                previousSong.setClickable(false);
                 if (!flashOn) {
                     if (mediaPlayer != null) {
                         mediaPlayer.release();
@@ -355,8 +371,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
                 } else {
-                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
-                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
+                    makeText(MainActivity.this, "You are in flashback mode!\n" +
+                            "Please go to normal mode to select music", LENGTH_SHORT).show();
                 }
             }
 
@@ -573,6 +589,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             mediaPlayer.stop();
             mediaPlayer.release();
         }
+        Toast toast = makeText(getApplicationContext(), "FlashBack Mode On", Toast.LENGTH_LONG);
+        toast.show();
+
         currentindex = 0;
         String repeat = new String(new char[1]).replace("\0", " ");
         nowPlayingView.setText(repeat + playList_flashback.sortingList.get(currentindex) + repeat);
@@ -618,7 +637,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             if (flashOn) {
                 playTracksOrder();
             }
-            else {
+            else{
+                currentindex = songList.size() - 1;
+                Toast lastSong = Toast.makeText(getApplicationContext(), "No next song available", Toast.LENGTH_SHORT);
+                lastSong.show();
                 return;
             }
         }
@@ -646,8 +668,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 });
             }
         }
-        else
-            return;
     }
 
     @Override
