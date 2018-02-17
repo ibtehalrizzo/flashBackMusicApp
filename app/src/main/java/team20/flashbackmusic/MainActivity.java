@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         if (flashOn && playList_flashback.sortingList.get(currentindex).equals(songList.get(position)))
                             next(playList_flashback.sortingList);
                         else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
-                            next(playList_flashback.sortingList);
+                            next(songList);
                     } else {
                         songListObj.get(position).setStatus(0);
                         Location location = currentUserlocation;//                Location location;
@@ -200,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     flashOn = true;
                     nextSong.setClickable(false);
                     playButton.setTag(R.drawable.ic_pause_black_24dp);
-                    playButton.setClickable(true);
+                    playButton.setClickable(false);
                     previousSong.setClickable(false);
                     listView.setEnabled(false);
                     Location location = currentUserlocation;
@@ -217,6 +217,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     nextSong.setClickable(true);
                     previousSong.setClickable(true);
                     mediaPlayer.stop();
+                    playButton.setClickable(true);
                     listView.setEnabled(true);
                 }
             }
@@ -560,7 +561,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
     }
     public void onLocationChanged(Location location) {
-        Log.d("loc",Double.toString(location.getLatitude()));
         currentUserlocation = location;
         if(flashOn) {
             score.score(location, currentUserDayOfWeek,currentUserMNEIndex);
