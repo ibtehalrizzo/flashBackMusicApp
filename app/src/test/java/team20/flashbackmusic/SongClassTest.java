@@ -1,5 +1,6 @@
 package team20.flashbackmusic;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -10,8 +11,12 @@ import static org.junit.Assert.assertEquals;
 
 public class SongClassTest {
 
-    Song testSong = new Song("Test", "Hello", "Album", 132, 1234);
+    Song testSong;
 
+    @Before
+    public void setup() {
+        testSong = new Song("Test", "Hello", "Album", 132, 1234);
+    }
     @Test
     public void songConstructorAndGetterTest() throws Exception {
 
@@ -29,9 +34,6 @@ public class SongClassTest {
 
     @Test
     public void setterTest() throws Exception {
-/*        public void setScore(int s) { score = s; }
-
-        public void setStatus(int s) { status = s; }*/
 
         testSong.setScore(20);
         testSong.setStatus(1);

@@ -29,13 +29,11 @@ public class Song {
         this.artist = artist;
         this.album = album;
         this.songResId = id;
-
-        // Convert duration to time
         this.duration = duration;
     }
 
 
-    // GETTER AND SETTER METHOD //
+    // Get Method
     public String getTitle()
     {
         return title;
@@ -58,6 +56,8 @@ public class Song {
         return mostRecentLocation;
     }
 
+    public long getDuration() { return duration; }
+
     public int getStatus()
     {
         return status;
@@ -71,8 +71,7 @@ public class Song {
     public int getSongResId(){return songResId;}
 
 
-
-
+    // Set Method
     public void setScore(int s) { score = s; }
 
     public void setStatus(int s) { status = s; }
