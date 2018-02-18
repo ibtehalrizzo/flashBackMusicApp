@@ -181,6 +181,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //set up media player
         mediaPlayer = new MediaPlayer();
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        detectTimeChanges();
+        currentUserlocation=getCurrentLocation();
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -206,8 +209,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     previousSong.setClickable(false);
                     listView.setEnabled(false);
                     Location location = currentUserlocation;
-                    int time = currentUserMNEIndex;
-                    Log.d("ti",Integer.toString(time));
+                    int time = currentUserMNEIndex;;
                     int day = currentUserDayOfWeek;
                     score.score(location, day, time);
                     playList_flashback.sorter();
@@ -595,6 +597,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         currentindex = 0;
         String repeat = new String(new char[1]).replace("\0", " ");
         nowPlayingView.setText(repeat + playList_flashback.sortingList.get(currentindex) + repeat);
+        showDateAndTime(songListObj.get(indexTosong.get(playList_flashback.sortingList.get(currentindex))));
+        showCurrentLocation(songListObj.get(indexTosong.get(playList_flashback.sortingList.get(currentindex))));
         nowPlayingView.setSelected(true);
         //for(int i=3;i<playlist.size();i++) {
         int resID = getResources().getIdentifier(playList_flashback.sortingList.get(currentindex), "raw", getPackageName());
@@ -737,7 +741,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         String finalString = address + ", "+state;
         return finalString;
     }
+    public Location getCurrentLocation(){
+        Criteria criteria = new Criteria();
+        String bestProvider =locationManager.getBestProvider(criteria,true);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    100);
+            Log.d("test1", "ins");
+            return  null;
+        }
+        else {
+            return locationManager.getLastKnownLocation(bestProvider);
+        }
+    }
     public void storeLocation(Song song) throws IOException {
         Criteria criteria = new Criteria();
         String bestProvider =locationManager.getBestProvider(criteria,true);

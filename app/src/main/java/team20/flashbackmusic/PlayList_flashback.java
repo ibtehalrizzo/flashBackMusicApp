@@ -42,8 +42,13 @@ public class PlayList_flashback implements Serializable {
                     else
                         return 1;
                 }
+                else if(song1.getRecentDateTime()!=null&& song2.getRecentDateTime()==null){
+                    return -1;
+                }
+                else if(song1.getRecentDateTime()==null&& song2.getRecentDateTime()!=null)
+                    return 1;
                 else
-                    return 0;
+                    return 1;
             }
         });
         needChange = 0;     //no need to resort the play list
