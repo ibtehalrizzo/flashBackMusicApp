@@ -3,6 +3,7 @@ package team20.flashbackmusic;
 import android.location.Location;
 import android.support.test.rule.ActivityTestRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import static junit.framework.Assert.assertEquals;
  */
 
 public class test_flashback {
+    @Rule
     public ActivityTestRule<MainActivity> scoreActivityTestRule= new ActivityTestRule<MainActivity>(MainActivity.class);
 
     @Test
@@ -26,7 +28,7 @@ public class test_flashback {
         int time = 1;
 
         song2.addDayHistory(day);
-        song2.addTimeHistory(day);
+        song2.addTimeHistory(time);
         //song2.timeHistory.add(time);//score=2
         //song2.status=1;
         song1.addDayHistory(2);     //score=1
@@ -37,32 +39,28 @@ public class test_flashback {
         ArrayList<String> titles = new ArrayList<>();
         titles.add(song1.getTitle());
         titles.add(song2.getTitle());
-        Calendar time1 = Calendar.getInstance();
-        time1.set(Calendar.HOUR_OF_DAY, 10);
-        int hours = time1.get(Calendar.HOUR_OF_DAY);
-        String s = time1.toString();
         Score scoretest = new Score(titles, songList);
         Location location = new Location("l1");
         scoretest.score(location, day, time);
         Hashtable<String, Integer> index = new Hashtable<>();
-        index.put(song1.getTitle(), 1);
-        index.put(song2.getTitle(), 2);
+        index.put(song1.getTitle(), 0);
+        index.put(song2.getTitle(), 1);
         PlayList_flashback playList_flashback = new PlayList_flashback(titles, songList, index);
         playList_flashback.sorter();
         assertEquals("test2", playList_flashback.sortingList.get(0));
         assertEquals("test1", playList_flashback.sortingList.get(1));
 
-        playList_flashback.changeToDislike(2);     //set the score of song2 to -1;
+        playList_flashback.changeToDislike(1);     //set the score of song2 to -1;
         playList_flashback.sorter();
         assertEquals("test1", playList_flashback.sortingList.get(0));
         assertEquals("test2", playList_flashback.sortingList.get(1));
 
-        playList_flashback.changeToNeutral(2, location, day, time);   // set the score of song2 to the score before
+        playList_flashback.changeToNeutral(1, location, day, time);   // set the score of song2 to the score before
         playList_flashback.sorter();
         assertEquals("test2", playList_flashback.sortingList.get(0));
         assertEquals("test1", playList_flashback.sortingList.get(1));
 
-        playList_flashback.changeToFavorite(1);         //add 2 to the score of song1, score of song1 is 3
+        playList_flashback.changeToFavorite(0);         //add 2 to the score of song1, score of song1 is 3
         playList_flashback.sorter();
         assertEquals("test1", playList_flashback.sortingList.get(0));
         assertEquals("test2", playList_flashback.sortingList.get(1));
