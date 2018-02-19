@@ -2,6 +2,7 @@ package team20.flashbackmusic;
 
 import android.location.Location;
 
+import java.io.Serializable;
 import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
@@ -12,7 +13,7 @@ import java.util.Set;
  * Created by lenovo on 2018/2/7.
  */
 
-public class Song {
+public class Song{
     private String title, artist, album,mostRecentDateTimeString,mostRecentLocationString;
     private Date mostRecentDateTime;
     private Location mostRecentLocation; //don’t know yet

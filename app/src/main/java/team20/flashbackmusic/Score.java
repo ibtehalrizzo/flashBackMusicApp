@@ -39,7 +39,7 @@ public class Score {
                 else{
                     Iterator<Location> itr = locationHistory.iterator();
                     while (itr.hasNext()) {
-                        if (itr.next().distanceTo(location) <= 30.48) {
+                        if (itr.next().distanceTo(location) <= 305) {
                             song.setScore(song.getScore()+1);
                         }
                     }
