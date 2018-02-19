@@ -8,6 +8,14 @@ import java.util.Queue;
  * Created by dhoei on 13/02/18.
  */
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+
+/**
+ * Created by dhoei on 13/02/18.
+ */
+
 public class Album {
 
     private ArrayList<Song> listOfTracks;
@@ -53,6 +61,10 @@ public class Album {
         if(queueTrackPlaying.isEmpty())
             throw new NullPointerException();
         return queueTrackPlaying.remove();
+    }
+
+    public Song getCurrentSongInQueue() {
+        return queueTrackPlaying.peek();
     }
 
     public String toString()
