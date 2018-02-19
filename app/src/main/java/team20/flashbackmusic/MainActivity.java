@@ -16,9 +16,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.os.Parcelable;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridView;
+import android.os.Parcel;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -341,8 +343,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             songTitleList.add(display);
 
         }
-
-
     }
 
     //precondition: tracks is already populated
@@ -572,7 +572,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
     public int convertToMNEIndex(int hour){
-        if(4<=hour && hour < 12 ){
+        if(4 <=hour && hour < 12 ){
             hour = 1;
         }
         else if(12<=hour && hour < 20 ){
