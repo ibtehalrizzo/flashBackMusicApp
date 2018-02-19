@@ -45,7 +45,7 @@ public class testforscore {
         int hours=time1.get(Calendar.HOUR_OF_DAY);
         String s= time1.toString();
         Score scoretest= new Score(titles,songList);
-        Location location=new Location("l1");
+        Location location=new Location("12");
         scoretest.score(location, day, time);
 
         assertEquals(2,song1.getScore());
