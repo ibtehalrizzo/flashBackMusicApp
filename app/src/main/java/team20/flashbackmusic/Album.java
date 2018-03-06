@@ -1,7 +1,11 @@
 package team20.flashbackmusic;
 
+import android.util.Log;
+
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -78,4 +82,14 @@ public class Album {
     }
 
 
+    /** This will prepare the album to be played by
+     *  queueing all song
+     * @param
+     */
+    public void setupAlbum()
+    {
+        clearQueue();
+        //queue all songs to play in album
+        queueAllSong();
+    }
 }

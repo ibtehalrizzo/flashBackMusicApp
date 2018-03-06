@@ -30,8 +30,11 @@ public class ScoreVibe implements IScore {
             HashSet<Location> locationHistory = song.getLocationHistory();    //get location and time history of corresponding song
             HashSet<Integer> dayHistory = song.getDayHistory();
             HashSet<Integer> timeHistory = song.getTimeHistory();
+
             int status = song.getStatus();
-            if (locationHistory.contains(location))          //If location is the same, score increase
+
+            //If location is the same, score increase
+            if (locationHistory.contains(location))
                 song.setScore(song.getScore()+1);
             else{
                 Iterator<Location> itr = locationHistory.iterator();

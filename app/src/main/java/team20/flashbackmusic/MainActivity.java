@@ -5,15 +5,11 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Criteria;
-import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -38,36 +34,27 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
-    private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
-    private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
-    private final int SONG_ALBUM = MediaMetadataRetriever.METADATA_KEY_ALBUM;
-    private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
 
     //initialize current index playing song
     private int  currentindex = 0;
-
 
     // List of songs
     private ListView listView;
     private ListAdapter listAdapter;
 
-
     private MediaPlayer mediaPlayer;
-
+    private MusicPlayer player;
 
     private FloatingActionButton  playButton;
     private Switch flashback;
@@ -81,18 +68,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     //playlist of the song to be played
     private Playlist playlist;
 
-
     // List of albums view
     private GridView albumView;
     private ListAdapter albumAdapter;
     private boolean flashOn = false;
 
-
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
     //TextViews of this activity
     private TextView nowPlayingView, locationView, dateTimeView; //durationView;
-
 
     //list of songs according to purpose
     private List<String> songList; //to play music
@@ -116,6 +100,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private int currentUserDayOfWeek = -1;
     private Location currentUserlocation;
 
+    private MusicLocator musicLocator;
+
+
     /**
      * Class for adapting list view to put +,x, and checklist signs
      */
@@ -133,7 +120,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         public MyAdapter(ArrayList<String> list, Context context) {
             this.list = list;
             this.context = context;
-
         }
 
         @Override
@@ -157,12 +143,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         public View getView(final int position, final View convertView, ViewGroup parent) {
             View v = convertView;
             if (v == null) {
-                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater inflater = (LayoutInflater)
+                        context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = inflater.inflate(R.layout.listview, null);
             }
             //Handle TextView and display string from your list
-            final TextView listItemText = (TextView) v.findViewById(R.id.list_item_string);
-            final Button addBtn = (Button) v.findViewById(R.id.add_btn);
+            final TextView listItemText = v.findViewById(R.id.list_item_string);
+            final Button addBtn = v.findViewById(R.id.add_btn);
             listItemText.setText(list.get(position));
        /*     if(songListObj!=null) {
                 if (songListObj.get(position).getStatus() == 0) {
@@ -199,7 +186,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to dislike", Toast.LENGTH_SHORT).show();
 
-                        if (flashOn && playlist.sortingList.get(currentindex).equals(songList.get(position)))
+                        if (flashOn && playlist.sortingList.get(currentindex)
+                                .equals(songList.get(position)))
                             next(playlist.sortingList);
                         else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
                             next(songList);
@@ -229,13 +217,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        //initialize all buttons
+        createButton();
 
         //setup media player
         mediaPlayer = new MediaPlayer();
 
-
+        /** This play the current all the current album songs
+         *  PRECONDITION: album has at least 1 song
+         */
+        player = new MusicPlayer(mediaPlayer, this, musicLocator, albumToPlay,
+                playButton);
 
         //set up location manager, ask user for permission
         detectTimeChanges();
@@ -243,28 +238,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+
                 locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(MainActivity.this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED &&
+                        ActivityCompat.checkSelfPermission(MainActivity.this,
+                                Manifest.permission.ACCESS_COARSE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED) {
 
                     ActivityCompat.requestPermissions(MainActivity.this,
                             new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                             100);
                     return;
                 } else {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 305, (LocationListener) MainActivity.this);
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 305, MainActivity.this);
                 }
             }
         });
 
+        musicLocator = new MusicLocator(locationManager, this);
 
         //initialize location of user
-        currentUserlocation = getCurrentLocation();
+        currentUserlocation = musicLocator.getCurrentLocation();
 
 
         //set up flashback switch listener
-        flashback = (Switch) findViewById(R.id.switch1);
+        flashback = findViewById(R.id.switch1);
         flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -277,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     previousSong.setClickable(false);
                     listView.setEnabled(false);
                     playButton.setClickable(false);
-                    changeToPauseButton();
+                    player.changeToPauseButton();
 
                     Location location = currentUserlocation;
                     int time = currentUserMNEIndex;
@@ -295,7 +295,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //play the song according to the score order
                     playTracksOrder();
 
-                    Toast.makeText(MainActivity.this, "Flashback mode on", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,
+                            "Flashback mode on", Toast.LENGTH_SHORT).show();
                 }
                 else{
                     flashOn = false;
@@ -306,28 +307,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     listView.setEnabled(true);
 
                     mediaPlayer.stop();
-                    changeToPlayButton();
+                    player.changeToPlayButton();
 
-                    Toast.makeText(MainActivity.this, "Flashback mode off", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,
+                            "Flashback mode off", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
 
         //Play or Pause, Previous, Next button
-        playButton = (FloatingActionButton) findViewById(R.id.playButton);
-        nextSong = findViewById(R.id.next);
-        previousSong = findViewById(R.id.previous);
-        changeToPlayButton();
+
+        player.changeToPlayButton();
 
         //initialize the views
-        nowPlayingView = (TextView) findViewById(R.id.nowPlaying);
-        albumView = (GridView) findViewById(R.id.albumList);
-        dateTimeView = (TextView)findViewById(R.id.playingTime);
-        locationView = (TextView) findViewById(R.id.playingLoc);
+        initializeView();
 
         // Make list
-        listView = (ListView) findViewById(R.id.songList);
+        listView = findViewById(R.id.songList);
 
         songList = new ArrayList<>();
         songTitleList = new ArrayList<>();
@@ -336,7 +333,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         indexTosong = new Hashtable<>();
 
         //GET LIST OF SONGS FROM RAW DIRECTORY
-        getMusic(songList, songTitleList);
+//        getMusic(songList, songTitleList);
+        LocalMusicParser musicParser = new LocalMusicParser(this, mmr, songListObj);
+        musicParser.getMusic(songList, songTitleList);
+        //populate album after we get music
+        musicParser.populateAlbum(songListObj, albumList);
+
 
         //initialize flashback mode data
         sortingList = new ArrayList<>(songList);
@@ -391,12 +393,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         /*RESTORING PREVIOUS STATE*/
 
 
-        //populate album after we get music
-        populateAlbum(songListObj, albumList);
+
+
         MyAdapter adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
         //handle listview and assign adapter
-        listView = (ListView)findViewById(R.id.songList);
+        listView = findViewById(R.id.songList);
         listView.setAdapter(adapter);
 
 
@@ -420,12 +422,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
 
-                    int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
+                    int resID = getResources().getIdentifier(songList.get(i),
+                            "raw", getPackageName());
                     mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                     mediaPlayer.start();
 
                     //after music start, change the button into pause button
-                    changeToPauseButton();
+                    player.changeToPauseButton();
 
                     //set the current playing song in the text view
                     setNowPlayingView(songTitleList.get(i));
@@ -434,7 +437,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     storeDateAndTime(songListObj.get(i));
 
                     try {
-                        storeLocation(songListObj.get(i));
+                        musicLocator.storeLocation(songListObj.get(i));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -500,7 +503,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         //show list of albums
         tempListAlbum = new ArrayList<>(albumList.values());
-        albumAdapter = new ArrayAdapter<>(this, android.R.layout.simple_expandable_list_item_1, tempListAlbum);
+        albumAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_expandable_list_item_1, tempListAlbum);
         albumView.setAdapter(albumAdapter);
 
 
@@ -524,10 +528,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     albumToPlay = tempListAlbum.get(i);
 
                     //prepare album to be played
-                    setupAlbum();
+                    albumToPlay.setupAlbum();
+
 
                     //play the whole album
-                    playAlbum();
+                    player.playAlbum();
 
 
                 } else {
@@ -551,23 +556,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if (mediaPlayer != null) {
                     if (mediaPlayer.isPlaying()) {
                         mediaPlayer.pause();
-                        changeToPlayButton();
+                        player.changeToPlayButton();
 
                     } else {
                         mediaPlayer.start();
                         nowPlayingView.setSelected(true);
-                        changeToPauseButton();
+                        player.changeToPauseButton();
 
                     }
                 } else {
                     //when there is no music is selected, change play and pause accordingly
                     if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp))
                     {
-                        changeToPauseButton();
+                        player.changeToPauseButton();
                     }
                     else
                     {
-                        changeToPlayButton();
+                        player.changeToPlayButton();
                     }
                 }
 
@@ -576,79 +581,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     }
 
-
-    /** This parse all the music from raw directory
-     *  and store the songs in all the list inputs
-     *
-     *  @param songList the list of original file name of song
-     *  @param songTitleList the list of title-artist of song to be displayed
-     */
-    public void getMusic(List songList, List songTitleList) {
-        Field[] fields = R.raw.class.getFields();
-
-        for (int i = 0; i < fields.length; i++) {
-            String songFilename = fields[i].getName();
-
-            songList.add(songFilename);
-
-
-            int resId = getResources().getIdentifier(songFilename, "raw", getPackageName());
-            Uri mediaPath = Uri.parse("android.resource://" + getPackageName() +
-                    "/" + resId);
-            mmr.setDataSource(this, mediaPath);
-
-
-            //add list of song objects
-            String title = mmr.extractMetadata(SONG_TITLE);
-            String artist = mmr.extractMetadata(SONG_ARTIST);
-            String album = mmr.extractMetadata(SONG_ALBUM);
-            String duration = mmr.extractMetadata(SONG_DURATION);
-
-            if(artist == null)
-                artist = "Unknown Artist";
-            if(album == null)
-                album = "Unknown Album";
-
-            long durationToLong = Long.parseLong(duration);
-
-            Song s = new Song(title, artist, album, durationToLong, resId);
-            songListObj.add(s);
-
-            //add to list for display TODO: we can get data from song object instead
-            String display = title + " - " + artist;
-            songTitleList.add(display);
-
-        }
-
-
+    private void createButton() {
+        playButton = findViewById(R.id.playButton);
+        nextSong = findViewById(R.id.next);
+        previousSong = findViewById(R.id.previous);
     }
 
-
-    /** This populate the album list of MainActivity
-     *  PRECONDITION: tracks is already populated
-     */
-    public void populateAlbum(List<Song> songListObj, Hashtable<String, Album> albumList) {
-
-
-        for (int i = 0; i < songListObj.size(); i++) {
-            String albumName = songListObj.get(i).getAlbum();
-            Log.d("Populating album:", albumName);
-            if (!albumList.containsKey(albumName)) {
-                //create album
-                Album newAlbum = new Album(albumName);
-                //add current track
-                newAlbum.addTrack(songListObj.get(i));
-                albumList.put(albumName, newAlbum);
-                Log.d("new album:", newAlbum.toString() + " with song "
-                        + songListObj.get(i).getTitle());
-
-            } else {
-                albumList.get(albumName).addTrack(songListObj.get(i));
-                Log.d("existing albumPopulate:", albumName + " with song " +
-                        songListObj.get(i).getTitle());
-            }
-        }
+    private void initializeView() {
+        nowPlayingView = findViewById(R.id.nowPlaying);
+        albumView = findViewById(R.id.albumList);
+        dateTimeView = findViewById(R.id.playingTime);
+        locationView = findViewById(R.id.playingLoc);
     }
+
 
     /** This makes the back button into home button
      *  so that the music player is not closed
@@ -690,71 +635,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         return super.onOptionsItemSelected(item);
     }
 
-    /** This play the current all the current album songs
-     *  PRECONDITION: album has at least 1 song
-     */
-    public void playAlbum()
-    {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-
-
-        Song songToPlay = albumToPlay.getNextSongToPlay();
-        int resID = songToPlay.getSongResId();
-
-        mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-        mediaPlayer.start();
-
-        Log.d("album play", "playing next song in the album");
-
-        //set button tag to pause
-        changeToPauseButton();
-
-        //set the current playing song view, location, date and time
-        String currentPlayingSongDisplay = songToPlay.getTitle() + " - " + songToPlay.getArtist();
-        setNowPlayingView(currentPlayingSongDisplay);
-        showCurrentLocation(songToPlay);
-        showDateAndTime(songToPlay);
-
-        //update the history of playing date and time of song
-        storeDateAndTime(songToPlay);
-        try {
-            storeLocation(songToPlay);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //set media player listener
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                Log.d("onCompletionCalled", "yes!");
-                if (playingAlbumFlag) {
-
-                    //check if there is any song to play left in album
-                    if (!albumToPlay.isQueueEmpty()) {
-                        playAlbum();
-                    }
-                    //if there is no more album to play, go to waiting state
-                    else
-                    {
-                        playingAlbumFlag = false;
-                        //set button tag to play
-                        changeToPlayButton();
-                    }
-
-                } else {
-                    //set button tag to play
-                    changeToPlayButton();
-                }
-            }
-        });
-
-    }
-
-
     /** This saves the last state when the music player
      *  app is closed
      */
@@ -775,16 +655,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     }
 
-    /** This will prepare the album to be played by
-     *  queueing all song
-     */
-    public void setupAlbum()
-    {
-        albumToPlay.clearQueue();
-        //queue all songs to play in album
-        albumToPlay.queueAllSong();
-    }
-
 
     /** This will set the text view to show the current playing song
      *  @param nowPlayingString the current playing song title - artist
@@ -796,23 +666,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         nowPlayingView.setText(repeat + nowPlayingString + repeat);
         nowPlayingView.setSelected(true);
     }
-
-    /** This changes the pause button into play button
-     *
-     */
-    public void changeToPlayButton() {
-        playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-        playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
-    }
-
-    /** This changes the play button into pause button
-     *
-     */
-    public void changeToPauseButton() {
-        playButton.setImageResource(R.drawable.ic_pause_black_24dp);
-        playButton.setTag(R.drawable.ic_pause_black_24dp);
-    }
-
 
     /**
      * This method is a listener when the location change
@@ -851,10 +704,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showDateAndTime(curPlaying);
 
 
-        int resID = getResources().getIdentifier(playlist.sortingList.get(currentindex), "raw", getPackageName());
+        int resID = getResources().getIdentifier(playlist.sortingList.get(currentindex),
+                "raw", getPackageName());
         mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
         mediaPlayer.start();
-        changeToPauseButton();
+        player.changeToPauseButton();
 
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
@@ -864,7 +718,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
 
     }
-
 
     /**
      * Method to play the next song
@@ -899,13 +752,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         showDateAndTime(songListObj.get(currentindex));
                         storeDateAndTime(songListObj.get(currentindex));
                         try {
-                            storeLocation(songListObj.get(currentindex));
+                            musicLocator.storeLocation(songListObj.get(currentindex));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                     else{
-                        Song curPlaying = songListObj.get(indexTosong.get(this.playlist.sortingList.get(currentindex)));
+                        Song curPlaying = songListObj.get(indexTosong.get(
+                                this.playlist.sortingList.get(currentindex)));
                         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
                         setNowPlayingView(display);
@@ -920,7 +774,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                     mediaPlayer.start();
 
-                    changeToPauseButton();
+                    player.changeToPauseButton();
 
                     mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
@@ -928,7 +782,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                             next(playlist);
                         }
                     });
-
 
                 }
 
@@ -988,17 +841,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     showDateAndTime(songListObj.get(currentindex));
                     storeDateAndTime(songListObj.get(currentindex));
                     try {
-                        storeLocation(songListObj.get(currentindex));
+                        musicLocator.storeLocation(songListObj.get(currentindex));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
 
-                    int resID = getResources().getIdentifier(playlist.get(currentindex), "raw", getPackageName());
+                    int resID = getResources().getIdentifier(playlist.get(currentindex),
+                            "raw", getPackageName());
                     mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
                     mediaPlayer.start();
 
-                    changeToPauseButton();
+                    player.changeToPauseButton();
 
                     mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
@@ -1023,7 +877,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
     }
-
 
     @Override
     public void onStatusChanged(String s, int i, Bundle bundle) {}
@@ -1083,90 +936,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             song.addDayHistory(day);
         }
 
-    }
-
-    /**
-     * Get address with given latitude and longitude
-     * @param latitude
-     * @param longitude
-     * @return address string
-     * @throws IOException
-     */
-    public String getAddress(double latitude, double longitude) throws IOException {
-        Geocoder geocoder;
-        List<Address> addresses = null;
-        geocoder = new Geocoder(this, Locale.getDefault());
-
-        try {
-            addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
-        String state = addresses.get(0).getAdminArea();
-        String finalString = address + ", "+state;
-        return finalString;
-    }
-
-    /**
-     * This method get the current location of the user
-     * @return the location of the user
-     */
-    public Location getCurrentLocation(){
-        Criteria criteria = new Criteria();
-        String bestProvider =locationManager.getBestProvider(criteria,true);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    100);
-            Log.d("test1", "ins");
-            return  null;
-        }
-        else {
-            return locationManager.getLastKnownLocation(bestProvider);
-        }
-    }
-
-    /**
-     * store the location to the song input
-     * @param song
-     * @throws IOException
-     */
-    public void storeLocation(Song song) throws IOException {
-        Criteria criteria = new Criteria();
-        String bestProvider = locationManager.getBestProvider(criteria,true);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    100);
-            Log.d("test1", "ins");
-            return;
-        }
-        else {
-            Location location = locationManager.getLastKnownLocation(bestProvider);
-            if(location != null){
-
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
-
-
-                String finalString = getAddress(latitude, longitude);
-                song.setMostRecentLocationString(finalString);
-                song.setMostRecentLocation(location);
-
-                if(!song.getLocationHistory().contains(location)){
-                    Iterator<Location> itr = song.getLocationHistory().iterator();
-                    while(itr.hasNext()){
-                        if(itr.next().distanceTo(location) >= 305){
-                            song.addLocationHistory(location);
-                        }
-                    }
-                }
-            }
-        }
     }
 
 
@@ -1256,8 +1025,3 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
    }*/
 
 }
-
-
-
-
-
