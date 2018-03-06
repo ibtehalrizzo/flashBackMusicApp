@@ -19,7 +19,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -38,17 +37,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -85,11 +75,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private FloatingActionButton previousSong;
     private Button addBtn;
 
-
-    private Score score;
+//    private ScoreFlashback scoreFlashback;
+    private IScore score;
 
     //playlist of the song to be played
-    private PlayList_flashback playList_flashback;
+    private Playlist playlist;
 
 
     // List of albums view
@@ -194,7 +184,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                         //change status of song to favorite
                         addBtn.setBackgroundResource(R.drawable.check);
-                        playList_flashback.changeToFavorite(position);
+                        playlist.changeToFavorite(position);
 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to favorite", Toast.LENGTH_SHORT).show();
@@ -202,15 +192,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     } else if (songListObj.get(position).getStatus() == 1) {
 
                         //change status of song to dislike
-                        playList_flashback.changeToDislike(position);
+                        playlist.changeToDislike(position);
 
                         addBtn.setBackgroundResource(R.drawable.cross);
 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to dislike", Toast.LENGTH_SHORT).show();
 
-                        if (flashOn && playList_flashback.sortingList.get(currentindex).equals(songList.get(position)))
-                            next(playList_flashback.sortingList);
+                        if (flashOn && playlist.sortingList.get(currentindex).equals(songList.get(position)))
+                            next(playlist.sortingList);
                         else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
                             next(songList);
                     } else {
@@ -222,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         int time = currentUserMNEIndex;
 
                         //change status of song to neutral
-                        playList_flashback.changeToNeutral(position,location,day, time);
+                        playlist.changeToNeutral(position,location,day, time);
                         addBtn.setBackgroundResource(R.drawable.add);
                     }
                 }
@@ -299,8 +289,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     //get score to list out song to be played
                     score.score(location, day, time);
-                    playList_flashback.sorter();
-                    sortingList = playList_flashback.sortingList;
+                    playlist.sorter();
+                    sortingList = playlist.sortingList;
 
                     //play the song according to the score order
                     playTracksOrder();
@@ -353,8 +343,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         for(int i=0;i<songList.size();i++){
             indexTosong.put(songList.get(i),i);
         }
-        score = new Score(songList,songListObj);
-        playList_flashback = new PlayList_flashback(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+        score = new ScoreFlashback(songList,songListObj);
+        playlist = new Playlist(sortingList, (ArrayList<Song>) songListObj, indexTosong);
 
 
         /*RESTORING PREVIOUS STATE*/
@@ -384,9 +374,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 int day = currentUserDayOfWeek;
 
                 score.score(location, day, time);
-                playList_flashback.sorter();
+                playlist.sorter();
 
-                sortingList = playList_flashback.sortingList;
+                sortingList = playlist.sortingList;
                 playTracksOrder();
             } else {
                 setNowPlayingView(songTitleList.get(currentindex));
@@ -834,7 +824,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             if(currentUserlocation.distanceTo(location)>305) {
                 currentUserlocation = location;
                 score.score(location, currentUserDayOfWeek, currentUserMNEIndex);
-                playList_flashback.sorter();
+                playlist.sorter();
                 playTracksOrder();
             }
         }
@@ -853,7 +843,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         currentindex = 0;
 
         //set the now playing text view, location, and time
-        Song curPlaying = songListObj.get(indexTosong.get(playList_flashback.sortingList.get(currentindex)));
+        Song curPlaying = songListObj.get(indexTosong.get(playlist.sortingList.get(currentindex)));
         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
         setNowPlayingView(display);
@@ -861,7 +851,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showDateAndTime(curPlaying);
 
 
-        int resID = getResources().getIdentifier(playList_flashback.sortingList.get(currentindex), "raw", getPackageName());
+        int resID = getResources().getIdentifier(playlist.sortingList.get(currentindex), "raw", getPackageName());
         mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
         mediaPlayer.start();
         changeToPauseButton();
@@ -869,7 +859,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
-                next(playList_flashback.sortingList);
+                next(playlist.sortingList);
             }
         });
 
@@ -915,7 +905,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         }
                     }
                     else{
-                        Song curPlaying = songListObj.get(indexTosong.get(playList_flashback.sortingList.get(currentindex)));
+                        Song curPlaying = songListObj.get(indexTosong.get(this.playlist.sortingList.get(currentindex)));
                         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
                         setNowPlayingView(display);
@@ -1232,7 +1222,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     public void run () {
                         setCurrentUserMNEAndDay();
                         score.score(currentUserlocation,currentUserDayOfWeek,currentUserMNEIndex);
-                        playList_flashback.sorter();
+                        playlist.sorter();
                         playTracksOrder();
                     }
                 };

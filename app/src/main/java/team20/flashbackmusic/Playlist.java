@@ -14,12 +14,12 @@ import java.util.Hashtable;
  * Created by lenovo on 2018/2/7.
  */
 
-public class PlayList_flashback implements Serializable {
+public class Playlist implements Serializable {
     public ArrayList<String> sortingList;  //Use a TreeSet to store sorting songs
     public ArrayList<Song> songs;
     public Hashtable<String, Integer> indexTosong;
     public int needChange=0;      //Every time play from the start of the playlist, judge whether the songlist need to be sorted. 0 means no need,1 means need.
-    public PlayList_flashback(ArrayList<String> sortingList, ArrayList<Song> songs, Hashtable<String, Integer> indexTosong) {    //constructor
+    public Playlist(ArrayList<String> sortingList, ArrayList<Song> songs, Hashtable<String, Integer> indexTosong) {    //constructor
         this.sortingList = sortingList;
         this.songs = songs;
         this.indexTosong = indexTosong;

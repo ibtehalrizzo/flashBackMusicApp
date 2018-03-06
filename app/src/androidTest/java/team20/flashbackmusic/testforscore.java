@@ -8,8 +8,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Hashtable;
-import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -44,7 +42,7 @@ public class testforscore {
         time1.set(Calendar.HOUR_OF_DAY,10);
         int hours=time1.get(Calendar.HOUR_OF_DAY);
         String s= time1.toString();
-        Score scoretest= new Score(titles,songList);
+        ScoreFlashback scoretest= new ScoreFlashback(titles,songList);
         Location location=new Location("12");
         scoretest.score(location, day, time);
 

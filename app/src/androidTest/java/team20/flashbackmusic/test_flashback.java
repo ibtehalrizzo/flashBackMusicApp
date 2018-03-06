@@ -7,7 +7,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Hashtable;
 
 import static junit.framework.Assert.assertEquals;
@@ -39,31 +38,31 @@ public class test_flashback {
         ArrayList<String> titles = new ArrayList<>();
         titles.add(song1.getTitle());
         titles.add(song2.getTitle());
-        Score scoretest = new Score(titles, songList);
+        ScoreFlashback scoretest = new ScoreFlashback(titles, songList);
         Location location = new Location("l1");
         scoretest.score(location, day, time);
         Hashtable<String, Integer> index = new Hashtable<>();
         index.put(song1.getTitle(), 0);
         index.put(song2.getTitle(), 1);
-        PlayList_flashback playList_flashback = new PlayList_flashback(titles, songList, index);
-        playList_flashback.sorter();
-        assertEquals("test2", playList_flashback.sortingList.get(0));
-        assertEquals("test1", playList_flashback.sortingList.get(1));
+        Playlist playlist = new Playlist(titles, songList, index);
+        playlist.sorter();
+        assertEquals("test2", playlist.sortingList.get(0));
+        assertEquals("test1", playlist.sortingList.get(1));
 
-        playList_flashback.changeToDislike(1);     //set the score of song2 to -1;
-        playList_flashback.sorter();
-        assertEquals("test1", playList_flashback.sortingList.get(0));
-        assertEquals("test2", playList_flashback.sortingList.get(1));
+        playlist.changeToDislike(1);     //set the score of song2 to -1;
+        playlist.sorter();
+        assertEquals("test1", playlist.sortingList.get(0));
+        assertEquals("test2", playlist.sortingList.get(1));
 
-        playList_flashback.changeToNeutral(1, location, day, time);   // set the score of song2 to the score before
-        playList_flashback.sorter();
-        assertEquals("test2", playList_flashback.sortingList.get(0));
-        assertEquals("test1", playList_flashback.sortingList.get(1));
+        playlist.changeToNeutral(1, location, day, time);   // set the score of song2 to the score before
+        playlist.sorter();
+        assertEquals("test2", playlist.sortingList.get(0));
+        assertEquals("test1", playlist.sortingList.get(1));
 
-        playList_flashback.changeToFavorite(0);         //add 2 to the score of song1, score of song1 is 3
-        playList_flashback.sorter();
-        assertEquals("test1", playList_flashback.sortingList.get(0));
-        assertEquals("test2", playList_flashback.sortingList.get(1));
+        playlist.changeToFavorite(0);         //add 2 to the score of song1, score of song1 is 3
+        playlist.sorter();
+        assertEquals("test1", playlist.sortingList.get(0));
+        assertEquals("test2", playlist.sortingList.get(1));
     }
 }
 
