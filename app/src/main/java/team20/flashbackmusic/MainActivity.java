@@ -257,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //setup media player
         mediaPlayer = new MediaPlayer();
 
-        //detectTimeChanges();
+        detectTimeChanges();
 
         runOnUiThread(new Runnable() {
             @Override
