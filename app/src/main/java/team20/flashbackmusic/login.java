@@ -7,19 +7,24 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+
+
 
 import static team20.flashbackmusic.MainActivity.account;
 
+
 public class login extends AppCompatActivity {
     SignInButton sign_in;
-    GoogleSignInClient mGoogleSignInClient;
+    GoogleApiClient mGoogleApiClient;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,7 +32,12 @@ public class login extends AppCompatActivity {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+               // .enableAutoManage(this, this)
+                //.addOnConnectionFailedListener(this)
+                //.addConnectionCallbacks(this)
+                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
+                .build();
         sign_in = (SignInButton)findViewById(R.id.sign_in_button);
         sign_in.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -41,7 +51,7 @@ public class login extends AppCompatActivity {
         });
     }
     private void signIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        Intent signInIntent =  Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
         startActivityForResult(signInIntent, 0);
     }
 
