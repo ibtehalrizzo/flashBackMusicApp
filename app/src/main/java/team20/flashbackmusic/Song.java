@@ -2,12 +2,9 @@ package team20.flashbackmusic;
 
 import android.location.Location;
 
-import java.io.Serializable;
 import java.sql.Time;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by lenovo on 2018/2/7.
@@ -16,14 +13,22 @@ import java.util.Set;
 public class Song {
     private String title, artist, album,mostRecentDateTimeString,mostRecentLocationString;
     private Date mostRecentDateTime;
-    private Location mostRecentLocation; //don’t know yet
+    private Location mostRecentLocation; 
     private HashSet<Location> locationHistory;
     private HashSet<Integer> dayHistory;  // 1-Monday 2-Tuesday 3-Wednesday 4- Thursday 5-Friday 6-Saturday 7-Sunday
     private HashSet<Integer> timeHistory;   //1- morning  2-afternoon 3-evening
+
+    private HashSet<Integer> dayOfMonthHistory; //to check if it was played last week
+    
     private int songResId;
     private int score;
     private int status; //1 - favorite, 0 - neutral, -1 - dislike
     private long duration;
+
+
+    private boolean playedNear;
+    private boolean playedLastWeek;
+    private boolean playedByAFriend;
 
     //constructor of song
     public Song(String title, String artist, String album, long duration, int id) {
@@ -45,9 +50,14 @@ public class Song {
         // Convert duration to time
         this.duration = duration;
 
-        locationHistory=new HashSet<>();
+        locationHistory = new HashSet<>();
         dayHistory = new HashSet<>();
-        timeHistory= new HashSet<>();
+        timeHistory = new HashSet<>();
+        dayOfMonthHistory = new HashSet<>();
+
+        playedNear = false;
+        playedLastWeek = false;
+        playedByAFriend = false;
     }
 
 
@@ -143,5 +153,36 @@ public class Song {
     }
     public void setMostRecentLocation(Location location){
         this.mostRecentLocation = location;
+    }
+
+    public void addDayOfMonthHistory(int dayWeek) {
+        getDayOfMonthHistory().add(dayWeek);}
+
+    public HashSet<Integer> getDayOfMonthHistory() {
+        return dayOfMonthHistory;
+    }
+
+    public boolean isPlayedByAFriend() {
+        return playedByAFriend;
+    }
+
+    public void setPlayedByAFriend(boolean playedByAFriend) {
+        this.playedByAFriend = playedByAFriend;
+    }
+
+    public boolean isPlayedNear() {
+        return playedNear;
+    }
+
+    public void setPlayedNear(boolean playedNear) {
+        this.playedNear = playedNear;
+    }
+
+    public boolean isPlayedLastWeek() {
+        return playedLastWeek;
+    }
+
+    public void setPlayedLastWeek(boolean playedLastWeek) {
+        this.playedLastWeek = playedLastWeek;
     }
 }

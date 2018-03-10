@@ -65,8 +65,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 //    private ScoreFlashback scoreFlashback;
     private IScore score;
 
-    //playlist of the song to be played
-    private Playlist playlist;
+    //playlistFlashback of the song to be played
+    private PlaylistFBM playlist;
 
     // List of albums view
     private GridView albumView;
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private List<String> songTitleList; //for display
     private List<Song> songListObj; //for storage of songs
 
-    //data for playlist of song
+    //data for playlistFlashback of song
     private ArrayList<String> sortingList;
     private Hashtable<String, Integer> indexTosong;
 
@@ -151,15 +151,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             final TextView listItemText = v.findViewById(R.id.list_item_string);
             final Button addBtn = v.findViewById(R.id.add_btn);
             listItemText.setText(list.get(position));
-       /*     if(songListObj!=null) {
-                if (songListObj.get(position).getStatus() == 0) {
-                    addBtn.setBackgroundResource(R.drawable.add);
-                } else if (songListObj.get(position).getStatus() == 1) {
-                    addBtn.setBackgroundResource(R.drawable.check);
-                } else
-                    addBtn.setBackgroundResource(R.drawable.cross);
-            }
-*/
 
             addBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -186,9 +177,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to dislike", Toast.LENGTH_SHORT).show();
 
-                        if (flashOn && playlist.sortingList.get(currentindex)
+                        if (flashOn && playlist.getSortingList().get(currentindex)
                                 .equals(songList.get(position)))
-                            next(playlist.sortingList);
+                            next(playlist.getSortingList());
                         else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
                             next(songList);
                     } else {
@@ -209,9 +200,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             return v;
         }
     }
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -257,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
 
-        musicLocator = new MusicLocator(locationManager, this);
+        musicLocator = new MusicLocator(locationManager, MainActivity.this);
 
         //initialize location of user
         currentUserlocation = musicLocator.getCurrentLocation();
@@ -276,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     nextSong.setClickable(false);
                     previousSong.setClickable(false);
                     listView.setEnabled(false);
-                    playButton.setClickable(false);
+//                    playButton.setClickable(false);
                     player.changeToPauseButton();
 
                     Location location = currentUserlocation;
@@ -290,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //get score to list out song to be played
                     score.score(location, day, time);
                     playlist.sorter();
-                    sortingList = playlist.sortingList;
+                    sortingList = playlist.getSortingList();
 
                     //play the song according to the score order
                     playTracksOrder();
@@ -298,7 +286,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     Toast.makeText(MainActivity.this,
                             "Flashback mode on", Toast.LENGTH_SHORT).show();
                 }
-                else{
+                else {
                     flashOn = false;
 
                     nextSong.setClickable(true);
@@ -306,8 +294,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     playButton.setClickable(true);
                     listView.setEnabled(true);
 
-                    mediaPlayer.stop();
+                    player.getMediaPlayer().stop();
+
                     player.changeToPlayButton();
+
 
                     Toast.makeText(MainActivity.this,
                             "Flashback mode off", Toast.LENGTH_SHORT).show();
@@ -335,6 +325,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //GET LIST OF SONGS FROM RAW DIRECTORY
 //        getMusic(songList, songTitleList);
         LocalMusicParser musicParser = new LocalMusicParser(this, mmr, songListObj);
+
         musicParser.getMusic(songList, songTitleList);
         //populate album after we get music
         musicParser.populateAlbum(songListObj, albumList);
@@ -345,8 +336,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         for(int i=0;i<songList.size();i++){
             indexTosong.put(songList.get(i),i);
         }
-        score = new ScoreFlashback(songList,songListObj);
-        playlist = new Playlist(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+        score = new ScoreVibe(songList,songListObj);
+        playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
 
 
         /*RESTORING PREVIOUS STATE*/
@@ -376,9 +367,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 int day = currentUserDayOfWeek;
 
                 score.score(location, day, time);
-                playlist.sorter();
+                playlistFlashback.sorter();
 
-                sortingList = playlist.sortingList;
+                sortingList = playlistFlashback.sortingList;
                 playTracksOrder();
             } else {
                 setNowPlayingView(songTitleList.get(currentindex));
@@ -391,9 +382,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //TODO: need to show in list views all the data stored
 
         /*RESTORING PREVIOUS STATE*/
-
-
-
 
         MyAdapter adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
@@ -415,20 +403,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 if (!flashOn) {
                     Log.d("listView: ", "playing a song pressed by user");
-                    if (mediaPlayer != null) {
-                        mediaPlayer.release();
-                        mediaPlayer = null;
-                    }
-
-
 
                     int resID = getResources().getIdentifier(songList.get(i),
                             "raw", getPackageName());
-                    mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-                    mediaPlayer.start();
-
-                    //after music start, change the button into pause button
-                    player.changeToPauseButton();
+                    player.playMusicId(resID);
 
                     //set the current playing song in the text view
                     setNowPlayingView(songTitleList.get(i));
@@ -519,10 +497,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if (!flashOn) {
                     Log.d("album:", "playing the whole album");
 
-                    if (mediaPlayer != null) {
-                        mediaPlayer.release();
-                        mediaPlayer = null;
-                    }
+                    player.releaseMusicPlayer();
 
                     //get album to play
                     albumToPlay = tempListAlbum.get(i);
@@ -530,6 +505,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //prepare album to be played
                     albumToPlay.setupAlbum();
 
+                    player.setAlbumToPlay(albumToPlay);
+                    player.setMusicLocator(musicLocator);
 
                     //play the whole album
                     player.playAlbum();
@@ -545,37 +522,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         });
 
-
         //set listener for the play button
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Replace with play the current music played
-                //or just change to pause button if there is no music
-                //selected
-                if (mediaPlayer != null) {
-                    if (mediaPlayer.isPlaying()) {
-                        mediaPlayer.pause();
-                        player.changeToPlayButton();
-
-                    } else {
-                        mediaPlayer.start();
-                        nowPlayingView.setSelected(true);
-                        player.changeToPauseButton();
-
-                    }
-                } else {
-                    //when there is no music is selected, change play and pause accordingly
-                    if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp))
-                    {
-                        player.changeToPauseButton();
-                    }
-                    else
-                    {
-                        player.changeToPlayButton();
-                    }
-                }
-
+                player.playingAndPausing();
             }
         });
 
@@ -689,14 +640,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
      */
     public void playTracksOrder(){
 
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
+        player.stop();
         currentindex = 0;
 
         //set the now playing text view, location, and time
-        Song curPlaying = songListObj.get(indexTosong.get(playlist.sortingList.get(currentindex)));
+        Song curPlaying = songListObj.get(indexTosong.get(playlist.getSortingList().get(currentindex)));
         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
         setNowPlayingView(display);
@@ -704,16 +652,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showDateAndTime(curPlaying);
 
 
-        int resID = getResources().getIdentifier(playlist.sortingList.get(currentindex),
+        int resID = getResources().getIdentifier(playlist.getSortingList().get(currentindex),
                 "raw", getPackageName());
-        mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-        mediaPlayer.start();
+
+        player.playMusicId(resID);
         player.changeToPauseButton();
 
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+        player.getMediaPlayer().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
-                next(playlist.sortingList);
+                next(playlist.getSortingList());
             }
         });
 
@@ -721,7 +669,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to play the next song
-     * @param playlist the list of songs in the playlist
+     * @param playlist the list of songs in the playlistFlashback
      */
     public void next(final List<String> playlist){
         if(playingAlbumFlag)
@@ -739,10 +687,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if (songListObj.get(indexTosong.
                         get(playlist.get(currentindex))).getStatus() != -1) {
 
-                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                        mediaPlayer.stop();
-                        mediaPlayer.release();
+
+                    if(player.getMediaPlayer().isPlaying()){
+                        player.getMediaPlayer().stop();
+                        player.releaseMusicPlayer();
                     }
+
 
 
                     //set the now playing text view
@@ -759,7 +709,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     }
                     else{
                         Song curPlaying = songListObj.get(indexTosong.get(
-                                this.playlist.sortingList.get(currentindex)));
+                                this.playlist.getSortingList().get(currentindex)));
                         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
                         setNowPlayingView(display);
@@ -771,12 +721,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     int resID = getResources().getIdentifier(playlist.get(currentindex),
                             "raw", getPackageName());
-                    mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-                    mediaPlayer.start();
+                    player.playMusicId(resID);
 
                     player.changeToPauseButton();
 
-                    mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    player.getMediaPlayer().
+                            setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mediaPlayer) {
                             next(playlist);
@@ -813,7 +763,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to play the previous song
-     * @param playlist the list of songs in the playlist
+     * @param playlist the list of songs in the playlistFlashback
      */
     public void previous(final List<String> playlist) {
         if(playingAlbumFlag)
@@ -830,10 +780,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if(songListObj.get(indexTosong.
                         get(playlist.get(currentindex))).getStatus() != -1)
                 {
-                    if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
-                        mediaPlayer.stop();
-                        mediaPlayer.release();
-                    }
+                    player.stop();
 
                     //update title, location, time view
                     setNowPlayingView(songTitleList.get(currentindex));
@@ -849,12 +796,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     int resID = getResources().getIdentifier(playlist.get(currentindex),
                             "raw", getPackageName());
-                    mediaPlayer = MediaPlayer.create(MainActivity.this, resID);
-                    mediaPlayer.start();
 
+                    player.playMusicId(resID);
                     player.changeToPauseButton();
 
-                    mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    player.getMediaPlayer().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mediaPlayer) {
                             next(playlist);
@@ -928,12 +874,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         hour = convertToMNEIndex(hour);
+
+        //store time history
         if(!song.getTimeHistory().contains(hour)){
             song.addTimeHistory(hour);
         }
+
+
+
         int day = calendar.get(Calendar.DAY_OF_WEEK);
         if(!song.getDayHistory().contains(day)){
             song.addDayHistory(day);
+        }
+
+        int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
+        if(!song.getDayOfMonthHistory().contains(day)){
+            song.addDayOfMonthHistory(dayOfMonth);
         }
 
     }

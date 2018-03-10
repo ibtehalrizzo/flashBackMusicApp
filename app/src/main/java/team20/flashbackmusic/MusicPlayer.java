@@ -34,17 +34,10 @@ public class MusicPlayer {
      */
     public void playAlbum()
     {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-
-
         Song songToPlay = albumToPlay.getNextSongToPlay();
         int resID = songToPlay.getSongResId();
 
-        mediaPlayer = MediaPlayer.create(activity, resID);
-        mediaPlayer.start();
+        playMusicId(resID);
 
         Log.d("album play", "playing next song in the album");
 
@@ -93,6 +86,46 @@ public class MusicPlayer {
 
     }
 
+    public void playMusicId(int resID) {
+        releaseMusicPlayer();
+        mediaPlayer = MediaPlayer.create(activity, resID);
+        mediaPlayer.start();
+
+        //after music start, change the button into pause button
+        changeToPauseButton();
+    }
+
+    public void releaseMusicPlayer() {
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    public void playingAndPausing() {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.pause();
+                changeToPlayButton();
+
+            } else {
+                mediaPlayer.start();
+                changeToPauseButton();
+
+            }
+        } else {
+            //when there is no music is selected, change play and pause accordingly
+            if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp))
+            {
+                changeToPauseButton();
+            }
+            else
+            {
+                changeToPlayButton();
+            }
+        }
+    }
+
     /** This changes the pause button into play button
      *
      */
@@ -107,5 +140,44 @@ public class MusicPlayer {
     public void changeToPauseButton() {
         playButton.setImageResource(R.drawable.ic_pause_black_24dp);
         playButton.setTag(R.drawable.ic_pause_black_24dp);
+    }
+
+    public void setAlbumToPlay(Album albumToPlay)
+    {
+        this.albumToPlay = albumToPlay;
+    }
+
+    public void setMusicLocator(MusicLocator locator)
+    {
+        this.musicLocator = locator;
+    }
+
+    public MediaPlayer getMediaPlayer() {
+        return mediaPlayer;
+    }
+
+    public void next(int index) {
+
+
+
+//        int resID = activity.getResources().getIdentifier(playlist.get(index),
+//                "raw", activity.getPackageName());
+//        mediaPlayer = MediaPlayer.create(activity, resID);
+//        mediaPlayer.start();
+//
+//        changeToPauseButton();
+//
+//        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//            @Override
+//            public void onCompletion(MediaPlayer mediaPlayer) {
+//                next(playlist);
+//            }
+//        });
+    }
+
+    public void stop(){
+        if(mediaPlayer.isPlaying())
+            mediaPlayer.stop();
+        releaseMusicPlayer();
     }
 }

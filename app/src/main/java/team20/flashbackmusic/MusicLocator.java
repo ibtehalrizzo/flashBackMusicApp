@@ -71,7 +71,6 @@ public class MusicLocator {
             ActivityCompat.requestPermissions(this.activity,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     100);
-            Log.d("test1", "ins");
             return;
         }
         else {
@@ -87,12 +86,14 @@ public class MusicLocator {
                 song.setMostRecentLocation(location);
 
                 if(!song.getLocationHistory().contains(location)){
-                    Iterator<Location> itr = song.getLocationHistory().iterator();
-                    while(itr.hasNext()){
-                        if(itr.next().distanceTo(location) >= 305){
-                            song.addLocationHistory(location);
-                        }
-                    }
+                    Log.d("adding location:", "does not contain current location");
+//                    Iterator<Location> itr = song.getLocationHistory().iterator();
+//                    while(itr.hasNext()){
+//                        if(itr.next().distanceTo(location) >= 305){
+//                            song.addLocationHistory(location);
+//                        }
+//                    }
+                    song.addLocationHistory(location);
                 }
             }
         }
@@ -108,19 +109,29 @@ public class MusicLocator {
     public String getAddress(double latitude, double longitude) throws IOException {
         List<Address> addresses = null;
 
+        Log.d("getAddressLat", ""+latitude);
+        Log.d("getAddressLong", ""+longitude);
         try {
             // Here 1 represent max location result to returned,
             // by documents it recommended 1 to 5
             addresses = new Geocoder(this.activity, Locale.getDefault()).
-                    getFromLocation(latitude, longitude, 1);
+                    getFromLocation(latitude,longitude,1);
+
+            // If any additional address line present than only, check with max available
+            // address lines by getMaxAddressLineIndex()
+            if(addresses.size() != 0){
+                String address = addresses.get(0).getAddressLine(0);
+                String state = addresses.get(0).getAdminArea();
+                String finalString = address + ", "+state;
+                return finalString;
+            }
+            else
+                return "invalid location";
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // If any additional address line present than only, check with max available
-        // address lines by getMaxAddressLineIndex()
-        String address = addresses.get(0).getAddressLine(0);
-        String state = addresses.get(0).getAdminArea();
-        String finalString = address + ", "+state;
-        return finalString;
+
+        return null;
     }
 }
