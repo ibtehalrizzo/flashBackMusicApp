@@ -15,7 +15,7 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
 
-import team20.flashbackmusic.R;
+//import team20.flashbackmusic.R;
 
 public class login extends AppCompatActivity {
     SignInButton sign_in;

@@ -41,6 +41,8 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 //import com.google.gson.Gson;
 //import com.google.gson.reflect.TypeToken;
 
@@ -50,10 +52,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -126,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private Location currentUserlocation;
     private GoogleSignInClient mGoogleSignInClient;
     public static GoogleSignInAccount account;
+    private String emails;
     /**
      * Class for adapting list view to put +,x, and checklist signs
      */
@@ -246,6 +251,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         account = GoogleSignIn.getLastSignedInAccount(this);
         //Log.w("accont",account.getEmail());
         updateUI(account);
+        emails = account.getEmail();
+        initializeDatabase(emails);
+
         //setup media player
         mediaPlayer = new MediaPlayer();
 
@@ -1269,6 +1277,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         if (account == null) {
             Intent intent = new Intent(this, login.class);
             startActivity(intent);
+        }
+    }
+    public void initializeDatabase(String email){
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference VMode = database.getReference();
+        //if(VMode.child(email) == null){
+        String name = email.split("@")[0];
+        //Map<String,User> friend = new HashMap<String,User>();
+        if(VMode.child(name)== null) {
+            User user = new User(name);
+            user.addfriend("2", new User("2"));
+            //friend.put(name,user);
+            //user.setFriendList(friend);
+            VMode.child(name).setValue(user);
         }
     }
 }
