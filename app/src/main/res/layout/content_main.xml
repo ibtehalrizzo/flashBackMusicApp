@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="team20.flashbackmusic.login.team20.MainActivity"
+    tools:showIn="@layout/activity_main">
+
+    <LinearLayout
+        android:id="@+id/layoutList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:weightSum="2">
+
+        <HorizontalScrollView
+            android:id="@+id/albumHorizontalView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true">
+
+            <GridView
+                android:id="@+id/albumList"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:columnWidth="200dp"
+                android:horizontalSpacing="10dp"
+                android:numColumns="3"
+                android:padding="10dp"
+                android:scrollbars="horizontal" />
+
+        </HorizontalScrollView>
+
+        <ListView
+            android:id="@+id/songList"
+            android:layout_width="match_parent"
+            android:padding="0dp"
+            android:layout_height="200dp"
+            android:layout_below="@id/albumHorizontalView"
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/nowPlayingLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layoutList"
+        android:orientation="vertical"
+        android:weightSum="3">
+
+        <TextView
+            android:id="@+id/nowPlaying"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18dp"
+            android:layout_marginTop="10dp"
+            android:text="Current playing song and Artist"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:textAlignment="center"/>
+
+        <TextView
+            android:id="@+id/playingLoc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:textSize="14dp"
+            android:text="Show Location"
+            android:gravity="center"
+            android:textAlignment="center"/>
+        <TextView
+            android:id="@+id/playingTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:textSize="14dp"
+            android:text="Show Time"
+            android:gravity="center"
+            android:textAlignment="center"/>
+        <TextView
+            android:id="@+id/songDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:textSize="14dp"
+            android:text="Song duration"
+            android:gravity="center"
+            android:textAlignment="center"/>
+
+    </LinearLayout>
+
+    <Switch
+        android:id="@+id/switch1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:scrollbarSize="40dp"
+        android:theme="@style/SwitchTheme"
+        android:text="Flashback" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/playButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/next"
+        android:layout_centerHorizontal="true"
+        app:srcCompat="@drawable/ic_play_arrow_black_24dp"
+        tools:ignore="VectorDrawableCompat" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/nowPlayingLayout"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="29dp"
+        android:layout_toEndOf="@+id/playButton"
+        android:clickable="true"
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@android:drawable/ic_media_next" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/previous"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/playButton"
+        android:layout_marginEnd="12dp"
+        android:layout_toStartOf="@+id/playButton"
+        android:clickable="true"
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@android:drawable/ic_media_previous" />
+
+    \\ android:id="@+id/fb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Flashback Button here"
+    android:layout_centerHorizontal="true"
+    android:layout_alignParentBottom="true"
+    android:layout_marginBottom="10dp"/>
+
+
+</RelativeLayout>
