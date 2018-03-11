@@ -14,8 +14,14 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static login.team20.MainActivity.account;
 import static login.team20.MainActivity.emails;
@@ -83,17 +89,27 @@ public class login extends AppCompatActivity {
     }
     public void initializeDatabase(String email){
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference VMode = database.getReference();
+        final DatabaseReference VMode = database.getReference();
+        final String name = email.split("@")[0];
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(!dataSnapshot.child("Users").hasChild(name)){
+                    User user = new User(name);
+                    user.addfriend("2", new User("2"));
+                    //friend.put(name,user);
+                    //user.setFriendList(friend);
+                    VMode.child("Users").child(name).setValue(user);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
         //if(VMode.child(email) == null){
-        String name = email.split("@")[0];
         //Map<String,User> friend = new HashMap<String,User>();
-        if(VMode.child(name)== null) {
-            User user = new User(name);
-            //user.addfriend("2", new User("2"));
-            //friend.put(name,user);
-            //user.setFriendList(friend);
-            VMode.child(name).setValue(user);
-        }
     }
     private void updateUI(GoogleSignInAccount account){
         if(account != null){
