@@ -1287,7 +1287,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //Map<String,User> friend = new HashMap<String,User>();
         if(VMode.child(name)== null) {
             User user = new User(name);
-            user.addfriend("2", new User("2"));
+            //user.addfriend("2", new User("2"));
             //friend.put(name,user);
             //user.setFriendList(friend);
             VMode.child(name).setValue(user);
