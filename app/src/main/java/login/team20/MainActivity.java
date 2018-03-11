@@ -41,8 +41,11 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 //import com.google.gson.Gson;
 //import com.google.gson.reflect.TypeToken;
 
@@ -71,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
 
     //initialize current index playing song
-    private int  currentindex = 0;
+    private int currentindex = 0;
 
 
     // List of songs
@@ -82,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private MediaPlayer mediaPlayer;
 
 
-    private FloatingActionButton  playButton;
+    private FloatingActionButton playButton;
     private Switch flashback;
     private FloatingActionButton nextSong;
     private FloatingActionButton previousSong;
@@ -131,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private GoogleSignInClient mGoogleSignInClient;
     public static GoogleSignInAccount account;
     public static String emails;
+
     /**
      * Class for adapting list view to put +,x, and checklist signs
      */
@@ -142,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         /**
          * Constructor of the adapter of list view
+         *
          * @param list
          * @param context
          */
@@ -204,8 +209,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to favorite", Toast.LENGTH_SHORT).show();
 
-                    }
-                    else if (songListObj.get(position).getStatus() == 1) {
+                    } else if (songListObj.get(position).getStatus() == 1) {
 
                         //change status of song to dislike
                         playList_flashback.changeToDislike(position);
@@ -219,8 +223,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                             next(playList_flashback.sortingList);
                         else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
                             next(songList);
-                    }
-                    else {
+                    } else {
                         Toast.makeText(MainActivity.this, "Back" +
                                 " to netral", Toast.LENGTH_SHORT).show();
                         songListObj.get(position).setStatus(0);
@@ -229,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         int time = currentUserMNEIndex;
 
                         //change status of song to neutral
-                        playList_flashback.changeToNeutral(position,location,day, time);
+                        playList_flashback.changeToNeutral(position, location, day, time);
                         addBtn.setBackgroundResource(R.drawable.add);
                     }
                 }
@@ -238,8 +241,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             return v;
         }
     }
-
-
 
 
     @Override
@@ -254,7 +255,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         //setup media player
         mediaPlayer = new MediaPlayer();
-
         detectTimeChanges();
 
         runOnUiThread(new Runnable() {
@@ -279,7 +279,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //initialize location of user
         currentUserlocation = getCurrentLocation();
 
-
         //set up flashback switch listener
         flashback = (Switch) findViewById(R.id.switch1);
         flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -299,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     Location location = currentUserlocation;
                     int time = currentUserMNEIndex;
 
-                    Log.d("(flashback) time",Integer.toString(time));
+                    Log.d("(flashback) time", Integer.toString(time));
                     Log.d("flashback: ", "toggled flashback mode on");
 
                     int day = currentUserDayOfWeek;
@@ -313,8 +312,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     playTracksOrder();
 
                     Toast.makeText(MainActivity.this, "Flashback mode on", Toast.LENGTH_SHORT).show();
-                }
-                else{
+                } else {
                     flashOn = false;
 
                     nextSong.setClickable(true);
@@ -340,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //initialize the views
         nowPlayingView = (TextView) findViewById(R.id.nowPlaying);
         albumView = (GridView) findViewById(R.id.albumList);
-        dateTimeView = (TextView)findViewById(R.id.playingTime);
+        dateTimeView = (TextView) findViewById(R.id.playingTime);
         locationView = (TextView) findViewById(R.id.playingLoc);
 
         // Make list
@@ -357,10 +355,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         //initialize flashback mode data
         sortingList = new ArrayList<>(songList);
-        for(int i=0;i<songList.size();i++){
-            indexTosong.put(songList.get(i),i);
+        for (int i = 0; i < songList.size(); i++) {
+            indexTosong.put(songList.get(i), i);
         }
-        score = new Score(songList,songListObj);
+        score = new Score(songList, songListObj);
         playList_flashback = new PlayList_flashback(sortingList, (ArrayList<Song>) songListObj, indexTosong);
 
 
@@ -413,7 +411,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         MyAdapter adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
         //handle listview and assign adapter
-        listView = (ListView)findViewById(R.id.songList);
+        listView = (ListView) findViewById(R.id.songList);
         listView.setAdapter(adapter);
 
 
@@ -434,7 +432,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         mediaPlayer.release();
                         mediaPlayer = null;
                     }
-
 
 
                     int resID = getResources().getIdentifier(songList.get(i), "raw", getPackageName());
@@ -475,8 +472,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onClick(View view) {
                 if (flashOn == false) {
-                    if(currentindex == songList.size()-1){
-                        currentindex = songList.size()-1;
+                    if (currentindex == songList.size() - 1) {
+                        currentindex = songList.size() - 1;
                         Toast lastSong = Toast.makeText(getApplicationContext(),
                                 "No next song available", Toast.LENGTH_SHORT);
 
@@ -495,15 +492,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             public void onClick(View view) {
                 if (flashOn == false) {
 
-                    if(playingAlbumFlag)
-                    {
+                    if (playingAlbumFlag) {
                         Toast.makeText(getApplicationContext(),
                                 "No previous song available." +
                                         " You are playing an album", Toast.LENGTH_LONG).show();
-                    }
-                    else
-                    {
-                        if(currentindex == 0){
+                    } else {
+                        if (currentindex == 0) {
                             Toast firstSong = Toast.makeText(getApplicationContext(),
                                     "No previous song available", Toast.LENGTH_LONG);
                             firstSong.show();
@@ -578,12 +572,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     }
                 } else {
                     //when there is no music is selected, change play and pause accordingly
-                    if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp))
-                    {
+                    if (playButton.getTag().equals(R.drawable.ic_play_arrow_black_24dp)) {
                         changeToPauseButton();
-                    }
-                    else
-                    {
+                    } else {
                         changeToPlayButton();
                     }
                 }
@@ -594,11 +585,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    /** This parse all the music from raw directory
-     *  and store the songs in all the list inputs
+    /**
+     * This parse all the music from raw directory
+     * and store the songs in all the list inputs
      *
-     *  @param songList the list of original file name of song
-     *  @param songTitleList the list of title-artist of song to be displayed
+     * @param songList      the list of original file name of song
+     * @param songTitleList the list of title-artist of song to be displayed
      */
     public void getMusic(List songList, List songTitleList) {
         Field[] fields = R.raw.class.getFields();
@@ -621,9 +613,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             String album = mmr.extractMetadata(SONG_ALBUM);
             String duration = mmr.extractMetadata(SONG_DURATION);
 
-            if(artist == null)
+            if (artist == null)
                 artist = "Unknown Artist";
-            if(album == null)
+            if (album == null)
                 album = "Unknown Album";
 
             long durationToLong = Long.parseLong(duration);
@@ -641,8 +633,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    /** This populate the album list of MainActivity
-     *  PRECONDITION: tracks is already populated
+    /**
+     * This populate the album list of MainActivity
+     * PRECONDITION: tracks is already populated
      */
     public void populateAlbum(List<Song> songListObj, Hashtable<String, Album> albumList) {
 
@@ -667,8 +660,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
-    /** This makes the back button into home button
-     *  so that the music player is not closed
+    /**
+     * This makes the back button into home button
+     * so that the music player is not closed
      */
     @Override
     public void onBackPressed() {
@@ -677,6 +671,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * this is the originaly implemented method from android studio
+     *
      * @param menu
      * @return true
      */
@@ -689,6 +684,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * this is the originaly implemented method from android studio
+     *
      * @param item
      * @return true or super.onOptionsItemSelected(item)
      */
@@ -707,11 +703,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         return super.onOptionsItemSelected(item);
     }
 
-    /** This play the current all the current album songs
-     *  PRECONDITION: album has at least 1 song
+    /**
+     * This play the current all the current album songs
+     * PRECONDITION: album has at least 1 song
      */
-    public void playAlbum()
-    {
+    public void playAlbum() {
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mediaPlayer = null;
@@ -755,8 +751,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         playAlbum();
                     }
                     //if there is no more album to play, go to waiting state
-                    else
-                    {
+                    else {
                         playingAlbumFlag = false;
                         //set button tag to play
                         changeToPlayButton();
@@ -772,12 +767,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    /** This saves the last state when the music player
-     *  app is closed
+    /**
+     * This saves the last state when the music player
+     * app is closed
      */
     @Override
-    public void onStop()
-    {
+    public void onStop() {
         super.onStop();
 
         //save the last state using sharedPreference
@@ -792,38 +787,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     }
 
-    /** This will prepare the album to be played by
-     *  queueing all song
+    /**
+     * This will prepare the album to be played by
+     * queueing all song
      */
-    public void setupAlbum()
-    {
+    public void setupAlbum() {
         albumToPlay.clearQueue();
         //queue all songs to play in album
         albumToPlay.queueAllSong();
     }
 
 
-    /** This will set the text view to show the current playing song
-     *  @param nowPlayingString the current playing song title - artist
+    /**
+     * This will set the text view to show the current playing song
+     *
+     * @param nowPlayingString the current playing song title - artist
      */
-    public void setNowPlayingView(String nowPlayingString)
-    {
+    public void setNowPlayingView(String nowPlayingString) {
         //hover the now playing text view
         String repeat = new String(new char[1]).replace("\0", " ");
         nowPlayingView.setText(repeat + nowPlayingString + repeat);
         nowPlayingView.setSelected(true);
     }
 
-    /** This changes the pause button into play button
-     *
+    /**
+     * This changes the pause button into play button
      */
     public void changeToPlayButton() {
         playButton.setImageResource(R.drawable.ic_play_arrow_black_24dp);
         playButton.setTag(R.drawable.ic_play_arrow_black_24dp);
     }
 
-    /** This changes the play button into pause button
-     *
+    /**
+     * This changes the play button into pause button
      */
     public void changeToPauseButton() {
         playButton.setImageResource(R.drawable.ic_pause_black_24dp);
@@ -834,11 +830,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     /**
      * This method is a listener when the location change
      * it will play new song in flashback mode
+     *
      * @param location
      */
     public void onLocationChanged(Location location) {
-        if(flashOn) {
-            if(currentUserlocation.distanceTo(location)>305) {
+        if (flashOn) {
+            if (currentUserlocation.distanceTo(location) > 305) {
                 currentUserlocation = location;
                 score.score(location, currentUserDayOfWeek, currentUserMNEIndex);
                 playList_flashback.sorter();
@@ -851,9 +848,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     /**
      * This method play the music in order for flashback mode
      */
-    public void playTracksOrder(){
+    public void playTracksOrder() {
 
-        if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
         }
@@ -885,19 +882,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to play the next song
+     *
      * @param playlist the list of songs in the playlist
      */
-    public void next(final List<String> playlist){
-        if(playingAlbumFlag)
-        {
+    public void next(final List<String> playlist) {
+        if (playingAlbumFlag) {
             Toast.makeText(MainActivity.this, "No next song available. " +
                     "You are playing an album", Toast.LENGTH_SHORT).show();
-        }
-        else
-        {
+        } else {
             currentindex++;
-            if (currentindex < playlist.size())
-            {
+            if (currentindex < playlist.size()) {
 
 
                 if (songListObj.get(indexTosong.
@@ -910,7 +904,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
                     //set the now playing text view
-                    if(!flashOn) {
+                    if (!flashOn) {
                         setNowPlayingView(songTitleList.get(currentindex));
                         showCurrentLocation(songListObj.get(currentindex));
                         showDateAndTime(songListObj.get(currentindex));
@@ -920,8 +914,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }
-                    else{
+                    } else {
                         Song curPlaying = songListObj.get(indexTosong.get(playList_flashback.sortingList.get(currentindex)));
                         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
@@ -947,25 +940,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     });
 
 
-                }
-
-                else
-                {
+                } else {
                     next(playlist);
                 }
 
-            }
-            else
-            {
+            } else {
                 currentindex = playlist.size() - 1;
-                if (flashOn)
-                {
+                if (flashOn) {
                     currentindex = 0;
                     next(playlist);
-                }
-                else
-                {
-                    currentindex = playlist.size()-1;
+                } else {
+                    currentindex = playlist.size() - 1;
                     Toast.makeText(MainActivity.this, "No next song available"
                             , Toast.LENGTH_SHORT).show();
                 }
@@ -977,24 +962,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to play the previous song
+     *
      * @param playlist the list of songs in the playlist
      */
     public void previous(final List<String> playlist) {
-        if(playingAlbumFlag)
-        {
+        if (playingAlbumFlag) {
             Toast.makeText(MainActivity.this, "No previous song available." +
                     "You are playing an album", Toast.LENGTH_SHORT).show();
-        }
-        else
-        {
+        } else {
             currentindex--;
-            if (currentindex >= 0)
-            {
+            if (currentindex >= 0) {
 
-                if(songListObj.get(indexTosong.
-                        get(playlist.get(currentindex))).getStatus() != -1)
-                {
-                    if(mediaPlayer!=null&&mediaPlayer.isPlaying()) {
+                if (songListObj.get(indexTosong.
+                        get(playlist.get(currentindex))).getStatus() != -1) {
+                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                         mediaPlayer.stop();
                         mediaPlayer.release();
                     }
@@ -1023,15 +1004,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                             next(playlist);
                         }
                     });
-                }
-                else
-                {
+                } else {
                     previous(playlist);
                 }
 
-            }
-            else
-            {
+            } else {
                 currentindex = 0;
                 Toast.makeText(MainActivity.this, "No previous song available",
                         Toast.LENGTH_SHORT).show();
@@ -1043,23 +1020,26 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
     @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) {}
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+    }
 
     @Override
-    public void onProviderEnabled(String s) {}
+    public void onProviderEnabled(String s) {
+    }
 
     @Override
-    public void onProviderDisabled(String s) {}
+    public void onProviderDisabled(String s) {
+    }
 
     /**
      * Method to show date and time text view
+     *
      * @param song
      */
-    public void showDateAndTime(Song song){
-        if(song.getMostRecentDateTime() != null){
+    public void showDateAndTime(Song song) {
+        if (song.getMostRecentDateTime() != null) {
             dateTimeView.setText(song.getMostRecentDateTimeString());
-        }
-        else{
+        } else {
             dateTimeView.setText("No Last Current Time and Date are available");
         }
 
@@ -1067,14 +1047,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to show location text view
+     *
      * @param song
      */
-    public void showCurrentLocation(Song song){
-        if(song.getMostRecentLocation() != null){
+    public void showCurrentLocation(Song song) {
+        if (song.getMostRecentLocation() != null) {
 
             locationView.setText(song.getMostRecentLocationString());
-        }
-        else{
+        } else {
             locationView.setText("No Last Current location is available");
         }
 
@@ -1082,9 +1062,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Method to store current date and time in the song
+     *
      * @param song
      */
-    public void storeDateAndTime(Song song){
+    public void storeDateAndTime(Song song) {
         SimpleDateFormat dateFormatter = new SimpleDateFormat("kk:mm:ss   dd MMM yyyy");
         String dateAndTime = dateFormatter.format(new Date());
         song.setMostRecentDateTime(new Date());
@@ -1092,11 +1073,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         hour = convertToMNEIndex(hour);
-        if(!song.getTimeHistory().contains(hour)){
+        if (!song.getTimeHistory().contains(hour)) {
             song.addTimeHistory(hour);
         }
         int day = calendar.get(Calendar.DAY_OF_WEEK);
-        if(!song.getDayHistory().contains(day)){
+        if (!song.getDayHistory().contains(day)) {
             song.addDayHistory(day);
         }
 
@@ -1104,6 +1085,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     /**
      * Get address with given latitude and longitude
+     *
      * @param latitude
      * @param longitude
      * @return address string
@@ -1122,38 +1104,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
         String state = addresses.get(0).getAdminArea();
-        String finalString = address + ", "+state;
+        String finalString = address + ", " + state;
         return finalString;
     }
 
     /**
      * This method get the current location of the user
+     *
      * @return the location of the user
      */
-    public Location getCurrentLocation(){
+    public Location getCurrentLocation() {
         Criteria criteria = new Criteria();
-        String bestProvider =locationManager.getBestProvider(criteria,true);
+        String bestProvider = locationManager.getBestProvider(criteria, true);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     100);
             Log.d("test1", "ins");
-            return  null;
-        }
-        else {
+            return null;
+        } else {
             return locationManager.getLastKnownLocation(bestProvider);
         }
     }
 
     /**
      * store the location to the song input
+     *
      * @param song
      * @throws IOException
      */
     public void storeLocation(Song song) throws IOException {
         Criteria criteria = new Criteria();
-        String bestProvider = locationManager.getBestProvider(criteria,true);
+        String bestProvider = locationManager.getBestProvider(criteria, true);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
@@ -1161,10 +1144,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     100);
             Log.d("test1", "ins");
             return;
-        }
-        else {
+        } else {
             Location location = locationManager.getLastKnownLocation(bestProvider);
-            if(location != null){
+            if (location != null) {
 
                 double latitude = location.getLatitude();
                 double longitude = location.getLongitude();
@@ -1174,10 +1156,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 song.setMostRecentLocationString(finalString);
                 song.setMostRecentLocation(location);
 
-                if(!song.getLocationHistory().contains(location)){
+                if (!song.getLocationHistory().contains(location)) {
                     Iterator<Location> itr = song.getLocationHistory().iterator();
-                    while(itr.hasNext()){
-                        if(itr.next().distanceTo(location) >= 305){
+                    while (itr.hasNext()) {
+                        if (itr.next().distanceTo(location) >= 305) {
                             song.addLocationHistory(location);
                         }
                     }
@@ -1188,22 +1170,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
     /**
-     *
      * @param hour: the time of day
      * @return return hour which indicates if morning then hour = 1, afternoon then hour = 2
-     *                                        evening then hour = 3
+     * evening then hour = 3
      */
-    public int convertToMNEIndex(int hour){
+    public int convertToMNEIndex(int hour) {
         //hour = 1 if it's a morning time between 4am and 12pm
-        if(4<=hour && hour < 12 ){
+        if (4 <= hour && hour < 12) {
             hour = 1;
         }
         //hour=2 if it's an afternoon time between 12pm and 8pm
-        else if(12<=hour && hour < 20 ){
+        else if (12 <= hour && hour < 20) {
             hour = 2;
         }
         //otherwise hour = 3
-        else{
+        else {
             hour = 3;
         }
         return hour;
@@ -1212,7 +1193,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     /**
      * get the hour and the day of week
      */
-    public void setCurrentUserMNEAndDay(){
+    public void setCurrentUserMNEAndDay() {
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         currentUserDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
@@ -1223,60 +1204,77 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     /**
      * Detect the changes every hour for flashback mode.
      */
-    public void detectTimeChanges(){
+    public void detectTimeChanges() {
         setCurrentUserMNEAndDay();
         Calendar calendar = Calendar.getInstance();
         int min = calendar.get(Calendar.MINUTE);
         //time it needs to delay. Ex: if the music is played at 12:05pm  then the time will
         //be delayed and time will be detected at 1pm
-        int timeDelay = 1000*60*(60 - min);
+        int timeDelay = 1000 * 60 * (60 - min);
         Timer timerDelay = new Timer();
         timerDelay.schedule(new TimerTask() {
             public void run() {
-                Timer hourlyTime = new Timer ();
-                TimerTask hourlyTask = new TimerTask () {
+                Timer hourlyTime = new Timer();
+                TimerTask hourlyTask = new TimerTask() {
                     @Override
-                    public void run () {
+                    public void run() {
                         setCurrentUserMNEAndDay();
-                        score.score(currentUserlocation,currentUserDayOfWeek,currentUserMNEIndex);
+                        score.score(currentUserlocation, currentUserDayOfWeek, currentUserMNEIndex);
                         playList_flashback.sorter();
                         playTracksOrder();
                     }
                 };
-                hourlyTime.schedule (hourlyTask, 0l, 1000*60*60);
+                hourlyTime.schedule(hourlyTask, 0l, 1000 * 60 * 60);
 
             }
 
         }, timeDelay);
     }
 
-    /* public boolean storeSongs() {
-         SharedPreferences sharedPreferences = getSharedPreferences("lastState",MODE_PRIVATE);
-         SharedPreferences.Editor editor = sharedPreferences.edit();
-         Gson gson = new Gson();
-         String json = gson.toJson(songListObj);
-         editor.putString("tracks",json);
-         editor.apply();
-              //ByteArrayInputStream jis = new ByteArrayInputStream(tbyte2);
-              //ObjectInputStream dis = new ObjectInputStream(jis);
-              //ArrayList<Song> songs =(ArrayList<Song>)dis.readObject();
-         return true;
-      }
-
-      public ArrayList<Song> getSongListObj(){
-          SharedPreferences sharedPreferences = getSharedPreferences("lastState",MODE_PRIVATE);
-          Gson gson = new Gson();
-          String json = sharedPreferences.getString("tracks","");
-          Type type = new TypeToken<List<Song>>(){}.getType();
-          ArrayList<Song> songs = gson.fromJson(json,type);
-          return songs;
-     }*/
     private void updateUI(GoogleSignInAccount account) {
         if (account == null) {
             Intent intent = new Intent(this, login.class);
             startActivity(intent);
-        }
-        else emails = account.getEmail();
+        } else emails = account.getEmail();
+    }
+
+    public void VMPlay(final Song song) {       //add song or update song in database
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference VMode = database.getReference();
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.child("Songs").hasChild(song.getTitle())) {
+                    //downloadsong
+                } else {
+                    //play thie song
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    private void addVMList(final String friendName){   //If friend is one of the User of VM, add the songlist of this friend
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference VMode = database.getReference();
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.child("Users").hasChild(friendName)){
+                    User friend = dataSnapshot.child("Users").child("friendName").getValue(User.class);
+                    List<String> friendSongList = friend.getDownloadedSong();
+                    songList.addAll(friendSongList);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
 }

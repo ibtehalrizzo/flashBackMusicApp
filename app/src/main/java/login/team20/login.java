@@ -1,6 +1,7 @@
 package login.team20;
 
 import android.content.Intent;
+import android.provider.Contacts;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,14 +15,24 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleBrowserClientRequestUrl;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.people.v1.PeopleService;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 
-import java.util.HashMap;
-import java.util.Map;
 
 import static login.team20.MainActivity.account;
 import static login.team20.MainActivity.emails;
@@ -96,7 +107,7 @@ public class login extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if(!dataSnapshot.child("Users").hasChild(name)){
                     User user = new User(name);
-                    user.addfriend("2", new User("2"));
+                    //user.addfriend("2", new User("2"));
                     //friend.put(name,user);
                     //user.setFriendList(friend);
                     VMode.child("Users").child(name).setValue(user);
@@ -117,4 +128,50 @@ public class login extends AppCompatActivity {
             finish();
         }
     }
+  /*  public void setUp() throws IOException {
+        HttpTransport httpTransport = new NetHttpTransport();
+        JacksonFactory jsonFactory = new JacksonFactory();
+
+        // Go to the Google API Console, open your application's
+        // credentials page, and copy the client ID and client secret.
+        // Then paste them into the following code.
+        String clientId = "753751928616-ahep6js7fjucb44irv70olu1sf0tb2b1.apps.googleusercontent.com";
+        String clientSecret = "1kKXSf7_3e4O-QzEqj6WejXA";
+
+        // Or your redirect URL for web based applications.
+        String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
+        String scope = "https://www.googleapis.com/auth/contacts.readonly";
+
+        // Step 1: Authorize -->
+        String authorizationUrl =
+                new GoogleBrowserClientRequestUrl(clientId, redirectUrl, Arrays.asList(scope)).build();
+
+        // Point or redirect your user to the authorizationUrl.
+        System.out.println("Go to the following link in your browser:");
+        System.out.println(authorizationUrl);
+
+        // Read the authorization code from the standard input stream.
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("What is the authorization code?");
+        String code = in.readLine();
+        // End of Step 1 <--
+
+        // Step 2: Exchange -->
+        GoogleTokenResponse tokenResponse =
+                new GoogleAuthorizationCodeTokenRequest(
+                        httpTransport, jsonFactory, clientId, clientSecret, code, redirectUrl)
+                        .execute();
+        // End of Step 2 <--
+
+        GoogleCredential credential = new GoogleCredential.Builder()
+                .setTransport(httpTransport)
+                .setJsonFactory(jsonFactory)
+                .setClientSecrets(clientId, clientSecret)
+                .build()
+                .setFromTokenResponse(tokenResponse);
+
+        PeopleService peopleService =
+                new PeopleService.Builder(httpTransport, jsonFactory, credential).build();
+
+    }.*/
 }

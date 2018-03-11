@@ -6,8 +6,10 @@ package login.team20;
 
 import android.location.Location;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,19 +19,19 @@ import java.util.Map;
 public class User {
     private String userName;
     private Map<String, User> friendList;
-    private Map<String, Song> downloadedSong;
+    private List<String> downloadedSong;
     private Location lastCurrentLocation;
 
     public User(String userName) {
         this.userName = userName;
         friendList = new HashMap<>();
-        downloadedSong = new HashMap<>();
+        downloadedSong = new ArrayList<>();
         lastCurrentLocation = null;
     }
     public User(String userName, Location lastCurrentLocation) {
         this.userName = userName;
         friendList = new HashMap<>();
-        downloadedSong = new HashMap<>();
+        downloadedSong = new ArrayList<>();
         this.lastCurrentLocation = lastCurrentLocation;
     }
 
@@ -41,7 +43,7 @@ public class User {
         return friendList;
     }
 
-    public Map<String, Song> getDownloadedSong() {
+    public List<String> getDownloadedSong() {
         return downloadedSong;
     }
 
@@ -68,8 +70,8 @@ public class User {
         friendList.put(name,friend);
     }
 
-    public void addDownloadedSong(String songname, Song song){
-        downloadedSong.put(songname,song);
+    public void addDownloadedSong(String songname){
+        downloadedSong.add(songname);
     }
 }
 
