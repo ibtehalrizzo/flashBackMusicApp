@@ -14,6 +14,11 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import static login.team20.MainActivity.account;
+import static login.team20.MainActivity.emails;
 
 //import team20.flashbackmusic.R;
 
@@ -64,9 +69,11 @@ public class login extends AppCompatActivity {
     }
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
-            MainActivity.account = completedTask.getResult(ApiException.class);
+            account = completedTask.getResult(ApiException.class);
+            emails = account.getEmail();
+            initializeDatabase(emails);
             // Signed in successfully, show authenticated UI.
-            updateUI(MainActivity.account);
+            updateUI(account);
         } catch (ApiException e) {
             // The ApiException status code indicates the detailed failure reason.
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
@@ -74,10 +81,23 @@ public class login extends AppCompatActivity {
             updateUI(null);
         }
     }
+    public void initializeDatabase(String email){
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference VMode = database.getReference();
+        //if(VMode.child(email) == null){
+        String name = email.split("@")[0];
+        //Map<String,User> friend = new HashMap<String,User>();
+        if(VMode.child(name)== null) {
+            User user = new User(name);
+            //user.addfriend("2", new User("2"));
+            //friend.put(name,user);
+            //user.setFriendList(friend);
+            VMode.child(name).setValue(user);
+        }
+    }
     private void updateUI(GoogleSignInAccount account){
         if(account != null){
             Intent intent  = new Intent(this, MainActivity.class);
-            intent.putExtra("account",account);
             finish();
         }
     }
