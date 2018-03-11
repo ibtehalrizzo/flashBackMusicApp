@@ -111,7 +111,8 @@
         android:layout_alignTop="@+id/next"
         android:layout_centerHorizontal="true"
         app:srcCompat="@drawable/ic_play_arrow_black_24dp"
-        tools:ignore="VectorDrawableCompat" />
+        tools:ignore="VectorDrawableCompat"
+        />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/next"
@@ -135,6 +136,16 @@
         android:clickable="true"
         app:backgroundTint="@color/colorPrimary"
         app:srcCompat="@android:drawable/ic_media_previous" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/currentPlaylist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/ic_list_black_24dp"
+        android:layout_marginBottom="6dp"
+        />
 
     \\ android:id="@+id/fb"
         android:layout_width="wrap_content"

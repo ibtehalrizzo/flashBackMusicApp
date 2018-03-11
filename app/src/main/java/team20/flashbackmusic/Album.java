@@ -1,20 +1,12 @@
 package team20.flashbackmusic;
 
-import android.util.Log;
-
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 
 /**
  * Created by dhoei on 13/02/18.
  */
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
 
 /**
  * Created by dhoei on 13/02/18.
@@ -73,7 +65,7 @@ public class Album {
 
     public String toString()
     {
-        return name;
+        return getName();
     }
 
     public ArrayList<Song> getListOfTracks()
@@ -91,5 +83,9 @@ public class Album {
         clearQueue();
         //queue all songs to play in album
         queueAllSong();
+    }
+
+    public String getName() {
+        return name;
     }
 }

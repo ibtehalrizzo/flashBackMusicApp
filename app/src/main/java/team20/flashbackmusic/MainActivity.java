@@ -3,6 +3,7 @@ package team20.flashbackmusic;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -13,6 +14,7 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private FloatingActionButton nextSong;
     private FloatingActionButton previousSong;
     private Button addBtn;
+    private FloatingActionButton showCurrentPlaylist;
 
 //    private ScoreFlashback scoreFlashback;
     private IScore score;
@@ -90,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     //Create list of albums
     private Hashtable<String, Album> albumList; //for checking if album exist
     private ArrayList<Album> tempListAlbum;
-
 
     private boolean playingAlbumFlag = false;
     private Album albumToPlay;
@@ -530,12 +532,65 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
 
+
+        // Set listener for show current playlist button
+        showCurrentPlaylist.setOnClickListener(new View.OnClickListener() {
+           @Override
+           public void onClick(View view) {
+               Log.d("show current list:", "clicked!");
+               CharSequence trackList[];
+               final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+               //check if it is in vibe mode
+               if(flashOn){ //TODO: need to change to vibe boolean
+                   trackList = new CharSequence[sortingList.size()];
+
+                   for(int i = 0; i < sortingList.size(); i++)
+                   {
+                       Song currSong = songListObj.get(
+                               indexTosong.get(playlist.getSortingList().get(i)));
+                       String display = currSong.getTitle() + " - " + currSong.getArtist();
+                       trackList[i] =  display;
+                       builder.setTitle("Vibe Mode Queue");
+                   }
+               }
+               else if(playingAlbumFlag) {
+                   trackList = new CharSequence[albumToPlay.getListOfTracks().size()];
+                   ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
+                   for (int i = 0; i < albumTracks.size(); i++) {
+                       String display = albumTracks.get(i).getTitle() +
+                               " - " + albumTracks.get(i).getArtist();
+                       trackList[i] = display;
+                   }
+                   builder.setTitle(albumToPlay.getName());
+               }
+               else
+               {
+                   trackList = new CharSequence[]{ "Empty" };
+                   builder.setTitle("Normal Mode - No Track List Displayed");
+               }
+
+
+
+               builder.setItems(trackList, new DialogInterface.OnClickListener() {
+                   @Override
+                   public void onClick(DialogInterface dialog, int which) {
+
+                   }
+               });
+               builder.show();
+
+
+           }
+        });
     }
+
 
     private void createButton() {
         playButton = findViewById(R.id.playButton);
         nextSong = findViewById(R.id.next);
         previousSong = findViewById(R.id.previous);
+        showCurrentPlaylist = findViewById(R.id.currentPlaylist);
     }
 
     private void initializeView() {
