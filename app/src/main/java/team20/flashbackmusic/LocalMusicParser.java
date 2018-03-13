@@ -43,7 +43,8 @@ public class LocalMusicParser implements IMusicParser{
             String songFilename = fields[i].getName();
             songList.add(songFilename);
 
-            int resId = mainActivity.getResources().getIdentifier(songFilename, "raw", mainActivity.getPackageName());
+            int resId = mainActivity.getResources().getIdentifier(songFilename,
+                    "raw", mainActivity.getPackageName());
             Uri mediaPath = Uri.parse("android.resource://" + mainActivity.getPackageName() +
                     "/" + resId);
 

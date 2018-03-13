@@ -2,22 +2,32 @@ package team20.flashbackmusic;
 
 
 import android.Manifest;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.support.annotation.RequiresPermission;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,6 +38,7 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -35,6 +46,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,8 +60,13 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
+    private final int SONG_TITLE = MediaMetadataRetriever.METADATA_KEY_TITLE;
+    private final int SONG_ARTIST = MediaMetadataRetriever.METADATA_KEY_ARTIST;
+    private final int SONG_ALBUM = MediaMetadataRetriever.METADATA_KEY_ALBUM;
+    private final int SONG_DURATION = MediaMetadataRetriever.METADATA_KEY_DURATION;
+
     //initialize current index playing song
-    private int  currentindex = 0;
+    private int  currentIndex = 0;
 
     // List of songs
     private ListView listView;
@@ -58,12 +75,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private MediaPlayer mediaPlayer;
     private MusicPlayer player;
 
-    private FloatingActionButton  playButton;
     private Switch flashback;
-    private FloatingActionButton nextSong;
-    private FloatingActionButton previousSong;
-    private Button addBtn;
-    private FloatingActionButton showCurrentPlaylist;
+    private FloatingActionButton playButton, nextSong,
+            previousSong, showCurrentPlaylist;
+    private Button addBtn, clickDownload;
+    private EditText downloadInput;
 
 //    private ScoreFlashback scoreFlashback;
     private IScore score;
@@ -104,6 +120,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     private MusicLocator musicLocator;
 
+    private DownloadManager downloadManager;
+    private long Music_DownloadId;
+    private String downloadTitle;
+    private long downloadReference;
+    private Uri currDownloadUri;
 
     /**
      * Class for adapting list view to put +,x, and checklist signs
@@ -179,10 +200,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Toast.makeText(MainActivity.this, "Added" +
                                 " to dislike", Toast.LENGTH_SHORT).show();
 
-                        if (flashOn && playlist.getSortingList().get(currentindex)
+                        if (flashOn && playlist.getSortingList().get(currentIndex)
                                 .equals(songList.get(position)))
                             next(playlist.getSortingList());
-                        else if (!flashOn && currentindex == position && mediaPlayer.isPlaying())
+                        else if (!flashOn && currentIndex == position) //TODO: FIXED BUG
                             next(songList);
                     } else {
                         Toast.makeText(MainActivity.this, "Back" +
@@ -209,6 +230,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        downloadInput = (EditText) findViewById(R.id.downloadTextField);
+
+        //set filter to only when download is complete and register broadcast receiver
+        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        registerReceiver(downloadReceiver, filter);
 
         //initialize all buttons
         createButton();
@@ -401,7 +427,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 // Disable album queue
                 playingAlbumFlag = false;
-                currentindex = i;
+                currentIndex = i;
 
                 if (!flashOn) {
                     Log.d("listView: ", "playing a song pressed by user");
@@ -441,8 +467,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onClick(View view) {
                 if (flashOn == false) {
-                    if(currentindex == songList.size()-1){
-                        currentindex = songList.size()-1;
+                    if(currentIndex == songList.size()-1){
+                        currentIndex = songList.size()-1;
                         Toast lastSong = Toast.makeText(getApplicationContext(),
                                 "No next song available", Toast.LENGTH_SHORT);
 
@@ -469,7 +495,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     }
                     else
                     {
-                        if(currentindex == 0){
+                        if(currentIndex == 0){
                             Toast firstSong = Toast.makeText(getApplicationContext(),
                                     "No previous song available", Toast.LENGTH_LONG);
                             firstSong.show();
@@ -532,6 +558,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
 
+        // Set listener for download button
+        clickDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("download button: ", "clicked!");
+                if (downloadInput.getText().toString() == null) {
+                    Toast.makeText(MainActivity.this, "Download Link not found",
+                            Toast.LENGTH_LONG).show();
+                }
+                else
+                {
+                    // Get the text from the input and parse it as Uri
+                    String getDownloadLink = downloadInput.getText().toString();
+                    Uri song_uri = Uri.parse(getDownloadLink);
+
+//                    String[] permit = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 2);
+//                    permit = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 3);
+                    Music_DownloadId = downloadData(song_uri);
+
+                }
+            }
+        });
+
 
         // Set listener for show current playlist button
         showCurrentPlaylist.setOnClickListener(new View.OnClickListener() {
@@ -543,16 +594,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                //check if it is in vibe mode
                if(flashOn){ //TODO: need to change to vibe boolean
-                   trackList = new CharSequence[sortingList.size()];
 
+                   //get the neutral and favorited song
+                   ArrayList<String> listSong = new ArrayList<>();
                    for(int i = 0; i < sortingList.size(); i++)
                    {
                        Song currSong = songListObj.get(
                                indexTosong.get(playlist.getSortingList().get(i)));
-                       String display = currSong.getTitle() + " - " + currSong.getArtist();
-                       trackList[i] =  display;
-                       builder.setTitle("Vibe Mode Queue");
+                       if (currSong.getStatus() != -1) {
+                           String display = currSong.getTitle() + " - " + currSong.getArtist();
+                           listSong.add(display);
+                       }
                    }
+
+                   //display the song that is going to be played
+                   trackList = new CharSequence[listSong.size()];
+                   for(int i = 0; i < listSong.size(); i++)
+                   {
+                       // Put song to playlist if not disliked
+                       trackList[i] = listSong.get(i);
+                   }
+                   builder.setTitle("Vibe Mode Queue");
+
                }
                else if(playingAlbumFlag) {
                    trackList = new CharSequence[albumToPlay.getListOfTracks().size()];
@@ -585,12 +648,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
     }
 
-
     private void createButton() {
         playButton = findViewById(R.id.playButton);
         nextSong = findViewById(R.id.next);
         previousSong = findViewById(R.id.previous);
         showCurrentPlaylist = findViewById(R.id.currentPlaylist);
+        clickDownload = findViewById(R.id.downloadButton);
     }
 
     private void initializeView() {
@@ -696,10 +759,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void playTracksOrder(){
 
         player.stop();
-        currentindex = 0;
+        currentIndex = 0;
 
         //set the now playing text view, location, and time
-        Song curPlaying = songListObj.get(indexTosong.get(playlist.getSortingList().get(currentindex)));
+        Song curPlaying = songListObj.get(indexTosong.get(playlist.getSortingList().get(currentIndex)));
         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
         setNowPlayingView(display);
@@ -707,7 +770,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showDateAndTime(curPlaying);
 
 
-        int resID = getResources().getIdentifier(playlist.getSortingList().get(currentindex),
+        int resID = getResources().getIdentifier(playlist.getSortingList().get(currentIndex),
                 "raw", getPackageName());
 
         player.playMusicId(resID);
@@ -734,13 +797,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         else
         {
-            currentindex++;
-            if (currentindex < playlist.size())
+            currentIndex++;
+            if (currentIndex < playlist.size())
             {
 
 
                 if (songListObj.get(indexTosong.
-                        get(playlist.get(currentindex))).getStatus() != -1) {
+                        get(playlist.get(currentIndex))).getStatus() != -1) {
 
 
                     if(player.getMediaPlayer().isPlaying()){
@@ -752,19 +815,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     //set the now playing text view
                     if(!flashOn) {
-                        setNowPlayingView(songTitleList.get(currentindex));
-                        showCurrentLocation(songListObj.get(currentindex));
-                        showDateAndTime(songListObj.get(currentindex));
-                        storeDateAndTime(songListObj.get(currentindex));
+                        setNowPlayingView(songTitleList.get(currentIndex));
+                        showCurrentLocation(songListObj.get(currentIndex));
+                        showDateAndTime(songListObj.get(currentIndex));
+                        storeDateAndTime(songListObj.get(currentIndex));
                         try {
-                            musicLocator.storeLocation(songListObj.get(currentindex));
+                            musicLocator.storeLocation(songListObj.get(currentIndex));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                     else{
                         Song curPlaying = songListObj.get(indexTosong.get(
-                                this.playlist.getSortingList().get(currentindex)));
+                                this.playlist.getSortingList().get(currentIndex)));
                         String display = curPlaying.getTitle() + " - " + curPlaying.getArtist();
 
                         setNowPlayingView(display);
@@ -774,7 +837,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     }
 
 
-                    int resID = getResources().getIdentifier(playlist.get(currentindex),
+                    int resID = getResources().getIdentifier(playlist.get(currentIndex),
                             "raw", getPackageName());
                     player.playMusicId(resID);
 
@@ -798,15 +861,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
             else
             {
-                currentindex = playlist.size() - 1;
+                currentIndex = playlist.size() - 1;
                 if (flashOn)
                 {
-                    currentindex = 0;
+                    currentIndex = 0;
                     next(playlist);
                 }
                 else
                 {
-                    currentindex = playlist.size()-1;
+                    currentIndex = playlist.size()-1;
                     Toast.makeText(MainActivity.this, "No next song available"
                             , Toast.LENGTH_SHORT).show();
                 }
@@ -828,28 +891,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         else
         {
-            currentindex--;
-            if (currentindex >= 0)
+            currentIndex--;
+            if (currentIndex >= 0)
             {
 
                 if(songListObj.get(indexTosong.
-                        get(playlist.get(currentindex))).getStatus() != -1)
+                        get(playlist.get(currentIndex))).getStatus() != -1)
                 {
                     player.stop();
 
                     //update title, location, time view
-                    setNowPlayingView(songTitleList.get(currentindex));
-                    showCurrentLocation(songListObj.get(currentindex));
-                    showDateAndTime(songListObj.get(currentindex));
-                    storeDateAndTime(songListObj.get(currentindex));
+                    setNowPlayingView(songTitleList.get(currentIndex));
+                    showCurrentLocation(songListObj.get(currentIndex));
+                    showDateAndTime(songListObj.get(currentIndex));
+                    storeDateAndTime(songListObj.get(currentIndex));
                     try {
-                        musicLocator.storeLocation(songListObj.get(currentindex));
+                        musicLocator.storeLocation(songListObj.get(currentIndex));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
 
-                    int resID = getResources().getIdentifier(playlist.get(currentindex),
+                    int resID = getResources().getIdentifier(playlist.get(currentIndex),
                             "raw", getPackageName());
 
                     player.playMusicId(resID);
@@ -870,7 +933,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
             else
             {
-                currentindex = 0;
+                currentIndex = 0;
                 Toast.makeText(MainActivity.this, "No previous song available",
                         Toast.LENGTH_SHORT).show();
             }
@@ -1012,6 +1075,136 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         }, timeDelay);
     }
+
+    /**
+     * Source: https://www.androidtutorialpoint.com/networking/android-
+     * download-manager-tutorial-download-file-using-download-manager-internet/
+     *
+     * Download the the file from the given URI
+     * @param uri
+     * @return downloadReference
+     */
+    public long downloadData(Uri uri) {
+
+        currDownloadUri = uri;
+
+        File f = new File("" + uri);
+        downloadTitle = f.getName();
+        Log.d("downloadTitle: ", downloadTitle);
+
+        // Create request for android download manager
+        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(uri);
+
+        Log.d("filename", f.getName());
+
+        // Set destination
+        request.setDestinationInExternalFilesDir(MainActivity.this,
+                Environment.DIRECTORY_DOWNLOADS, "AndroidTutorialPoint.mp3");
+
+//        request.setDestinationUri(Uri.parse(Environment.DIRECTORY_DOWNLOADS));
+
+        Toast.makeText(MainActivity.this, "Downloading Music",
+                Toast.LENGTH_LONG).show();
+
+        downloadReference = downloadManager.enqueue(request);
+
+        return downloadReference;
+    }
+
+    /**
+     * Source: https://www.androidtutorialpoint.com/networking/android-
+     * download-manager-tutorial-download-file-using-download-manager-internet/
+     *
+     * Generates a pop-up when download is complete
+     */
+    private BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            //check if the broadcast message is for our Enqueued download
+            long referenceId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+
+            if(referenceId == Music_DownloadId) {
+
+                Log.d("Music download done", "");
+                Toast.makeText(MainActivity.this,
+                        "Music Download Complete", Toast.LENGTH_LONG).show();
+
+                Log.d("Directory: ", Environment.DIRECTORY_DOWNLOADS);
+                String path = Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS) + "/" + "AndroidTutorialPoint.mp3";
+
+                File target = new File(path);
+                Uri musicUri = Uri.fromFile(target);
+                Log.d("uri:", musicUri.toString());
+
+
+
+//                Uri uri = downloadManager.getUriForDownloadedFile(downloadReference);
+//                Uri uri = Uri.parse(Environment.DIRECTORY_DOWNLOADS);
+//                Log.d( "Uri: ", uri.toString());
+//                File path = Environment.getExternalStorageDirectory().getAbsoluteFile();
+
+
+                if(path == null)
+                    Log.d("NULL DIRECTORY", "triggered");
+                else
+                    Log.d("non-Null DIRECTORY", path);
+
+                if (target == null) {
+                    Log.d("NULL MUSIC FILE", "triggered");
+                }
+                else {
+                    Log.d("non-null file", target.getName());
+                }
+
+
+//                File[] files = path.listFiles();
+//                if(files == null)
+//                Log.d("NULL MUSIC FILES", "triggered");
+//                else
+//                Log.d("non-Null MUSIC FILES", files[0].getName());
+//                int resId = getResources().getIdentifier(path.getName(),
+//                        "raw",getPackageName());
+
+
+//                player.playMusicId(resId);
+//                for (int i = 0; i < fileNames.length; i++) {
+//                    Log.d("Filename: ", fileNames[i].getName());
+//                }
+
+//                mmr = new MediaMetadataRetriever();
+////
+////                Log.d("path: ", path.toString());
+//                mmr.setDataSource(MainActivity.this, musicUri);
+//
+//                //add list of song objects
+//                String title = mmr.extractMetadata(SONG_TITLE);
+//                String artist = mmr.extractMetadata(SONG_ARTIST);
+//                String album = mmr.extractMetadata(SONG_ALBUM);
+//                String duration = mmr.extractMetadata(SONG_DURATION);
+//                Log.d("title:", title);
+//                Log.d("artist:", artist);
+//                Log.d("album:", album);
+//                Log.d("duration:", duration);
+//                if(artist == null)
+//                    artist = "Unknown Artist";
+//                if(album == null)
+//                    album = "Unknown Album";
+//
+//                long durationToLong = Long.parseLong(duration);
+//
+//                songListObj.add(new Song(title, artist, album,
+//                        durationToLong, (int) downloadReference));
+//
+//                String display = title + " - " + artist;
+//                songTitleList.add(display);
+            }
+
+        }
+    };
 
   /* public boolean storeSongs() {
        SharedPreferences sharedPreferences = getSharedPreferences("lastState",MODE_PRIVATE);
