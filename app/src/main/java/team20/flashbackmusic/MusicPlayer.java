@@ -36,9 +36,15 @@ public class MusicPlayer {
     public void playAlbum()
     {
         Song songToPlay = albumToPlay.getNextSongToPlay();
-        int resID = songToPlay.getSongResId();
 
-        playMusicId(resID);
+        if (!songToPlay.isDownload()) {
+            int resID = songToPlay.getSongResId();
+
+            playMusicId(resID);
+        }
+        else {
+            playMusicUri(songToPlay.getSongUri());
+        }
 
         Log.d("album play", "playing next song in the album");
 

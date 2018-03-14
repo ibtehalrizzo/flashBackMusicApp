@@ -57,6 +57,8 @@ public class LocalMusicParser implements IMusicParser{
             String album = mmr.extractMetadata(SONG_ALBUM);
             String duration = mmr.extractMetadata(SONG_DURATION);
 
+            if (title == null)
+                title = "Unknown Title";
             if(artist == null)
                 artist = "Unknown Artist";
             if(album == null)
@@ -94,9 +96,27 @@ public class LocalMusicParser implements IMusicParser{
                         + songListObj.get(i).getTitle());
 
             } else {
-                albumList.get(albumName).addTrack(songListObj.get(i));
-                Log.d("existing albumPopulate:", albumName + " with song " +
-                        songListObj.get(i).getTitle());
+
+                // Flag for duplicate
+                boolean flagDupe = true;
+                List albumTracklist = albumList.get(albumName).getListOfTracks();
+
+                for (int j = 0; j < albumTracklist.size(); j++) {
+
+                    if (!songListObj.get(i).equals(albumTracklist.get(j))) {
+                        Log.d("existing albumPopulate:", albumName + " with song " +
+                                songListObj.get(i).getTitle());
+                    } else {
+                        flagDupe = false;
+                        Log.d("duplicate albumPop: ", albumName + " with song " +
+                                songListObj.get(i).getTitle());
+                    }
+                }
+
+                // If there's no duplicate, insert the song
+                if (flagDupe)
+                    albumList.get(albumName).addTrack(songListObj.get(i));
+
             }
         }
     }

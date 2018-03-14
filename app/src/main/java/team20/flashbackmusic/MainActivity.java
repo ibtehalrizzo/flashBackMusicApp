@@ -1212,13 +1212,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Log.d("artist:", artist);
                 Log.d("album:", album);
 
-//                LocalMusicParser musicParser = new LocalMusicParser(
-//                        MainActivity.this, mmr, songListObj);
-//
-//                musicParser.getMusic(songList, songTitleList);
-//                //populate album after we get music
-//                musicParser.populateAlbum(songListObj, albumList);
-
                 long durationToLong = Long.parseLong(duration);
                 Log.d("duration:", duration);
 
@@ -1240,14 +1233,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
                 adapter.notifyDataSetChanged();
 
-                player.playMusicUri(filePath);
+//                player.playMusicUri(filePath);
 //                //handle listview and assign adapter
 //                listView = findViewById(R.id.songList);
 //                listView.setAdapter(adapter);
 
                 // Update album
-                //GET LIST OF SONGS FROM RAW DIRECTORY
-//        getMusic(songList, songTitleList);
+                Log.d("Populating album: ", album);
+
+                LocalMusicParser musicParser = new LocalMusicParser(
+                        MainActivity.this, mmr, songListObj);
+
+                musicParser.populateAlbum(songListObj, albumList);
+
+                //show list of albums
+                tempListAlbum = new ArrayList<>(albumList.values());
+                albumAdapter = new ArrayAdapter<>(MainActivity.this,
+                        android.R.layout.simple_expandable_list_item_1, tempListAlbum);
+                albumView.setAdapter(albumAdapter);
+
+//                if (!albumList.containsKey(album)) {
+//                    //create album
+//                    Album newAlbum = new Album(album);
+//                    //add current track
+//                    newAlbum.addTrack(songListObj.get(songListObj.size()-1));
+//                    albumList.put(album, newAlbum);
+//                    Log.d("new album:", newAlbum.toString() + " with song "
+//                            + songListObj.get(songListObj.size()-1).getTitle());
+//                }
+//                else {
+//                    albumList.get(album).addTrack(songListObj.get(songListObj.size()-1));
+//                    Log.d("existing albumPopulate:", album + " with song " +
+//                            songListObj.get(songListObj.size()-1).getTitle());
+//                }
 
 
             }
