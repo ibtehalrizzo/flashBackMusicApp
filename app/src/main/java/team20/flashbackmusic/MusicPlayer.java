@@ -1,6 +1,7 @@
 package team20.flashbackmusic;
 
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
 import java.io.IOException;
@@ -89,6 +90,16 @@ public class MusicPlayer {
     public void playMusicId(int resID) {
         releaseMusicPlayer();
         mediaPlayer = MediaPlayer.create(activity, resID);
+        mediaPlayer.start();
+
+        //after music start, change the button into pause button
+        changeToPauseButton();
+    }
+
+    public void playMusicUri(Uri uri){
+
+        releaseMusicPlayer();
+        mediaPlayer = MediaPlayer.create(activity, uri);
         mediaPlayer.start();
 
         //after music start, change the button into pause button

@@ -1,6 +1,7 @@
 package team20.flashbackmusic;
 
 import android.location.Location;
+import android.net.Uri;
 
 import java.sql.Time;
 import java.util.Date;
@@ -21,6 +22,8 @@ public class Song {
     private HashSet<Integer> dayOfMonthHistory; //to check if it was played last week
     
     private int songResId;
+    private Uri songUri;
+
     private int score;
     private int status; //1 - favorite, 0 - neutral, -1 - dislike
     private long duration;
@@ -29,8 +32,16 @@ public class Song {
     private boolean playedNear;
     private boolean playedLastWeek;
     private boolean playedByAFriend;
+    private boolean download;
 
-    //constructor of song
+    /**
+     * Constructor for song that is local
+     * @param title
+     * @param artist
+     * @param album
+     * @param duration
+     * @param id
+     */
     public Song(String title, String artist, String album, long duration, int id) {
         mostRecentDateTime = null;
         mostRecentLocation = null;
@@ -58,8 +69,48 @@ public class Song {
         playedNear = false;
         playedLastWeek = false;
         playedByAFriend = false;
+        download = false;
+
     }
 
+    /**
+     * Constructor for downloaded song
+     * @param title
+     * @param artist
+     * @param album
+     * @param duration
+     * @param id
+     */
+    public Song(String title, String artist, String album, long duration, Uri id) {
+        mostRecentDateTime = null;
+        mostRecentLocation = null;
+
+        //for status, 1 = favorite, 0 = neutral, -1 = dislike
+        //initialize with neutral status
+        status = 0;
+
+        //initialize with score 0 because the music has not been
+        //played
+        score = 0;
+
+        this.title = title;
+        this.artist = artist;
+        this.album = album;
+        this.songUri = id;
+        // Convert duration to time
+        this.duration = duration;
+
+        locationHistory = new HashSet<>();
+        dayHistory = new HashSet<>();
+        timeHistory = new HashSet<>();
+        dayOfMonthHistory = new HashSet<>();
+
+        playedNear = false;
+        playedLastWeek = false;
+        playedByAFriend = false;
+        download = true;
+
+    }
 
     // GETTER AND SETTER METHOD //
     public String getTitle()
@@ -184,5 +235,13 @@ public class Song {
 
     public void setPlayedLastWeek(boolean playedLastWeek) {
         this.playedLastWeek = playedLastWeek;
+    }
+
+    public boolean isDownload() {
+        return download;
+    }
+
+    public Uri getSongUri() {
+        return songUri;
     }
 }

@@ -126,6 +126,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private long downloadReference;
     private Uri currDownloadUri;
 
+    private MyAdapter adapter;
+
+
     /**
      * Class for adapting list view to put +,x, and checklist signs
      */
@@ -411,7 +414,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         /*RESTORING PREVIOUS STATE*/
 
-        MyAdapter adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
+        adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
         //handle listview and assign adapter
         listView = findViewById(R.id.songList);
@@ -432,9 +435,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if (!flashOn) {
                     Log.d("listView: ", "playing a song pressed by user");
 
-                    int resID = getResources().getIdentifier(songList.get(i),
-                            "raw", getPackageName());
-                    player.playMusicId(resID);
+                    if(!songListObj.get(i).isDownload())
+                    {
+                        int resID = getResources().getIdentifier(songList.get(i),
+                                "raw", getPackageName());
+                        player.playMusicId(resID);
+
+                    }
+                    else
+                    {
+                        Uri path = songListObj.get(i).getSongUri();
+                        player.playMusicUri(path);
+                    }
 
                     //set the current playing song in the text view
                     setNowPlayingView(songTitleList.get(i));
@@ -447,6 +459,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
 
 
                 } else {
@@ -1097,10 +1110,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         DownloadManager.Request request = new DownloadManager.Request(uri);
 
         Log.d("filename", f.getName());
+//        Log.d("destination download:", Environment.DIRECTORY_DOWNLOADS);
+
+        String path = Environment.DIRECTORY_MUSIC;
+        Log.d("storing in path:", path);
 
         // Set destination
         request.setDestinationInExternalFilesDir(MainActivity.this,
-                Environment.DIRECTORY_DOWNLOADS, "AndroidTutorialPoint.mp3");
+                Environment.DIRECTORY_MUSIC, downloadTitle);
+
 
 //        request.setDestinationUri(Uri.parse(Environment.DIRECTORY_DOWNLOADS));
 
@@ -1132,75 +1150,67 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Toast.makeText(MainActivity.this,
                         "Music Download Complete", Toast.LENGTH_LONG).show();
 
-                Log.d("Directory: ", Environment.DIRECTORY_DOWNLOADS);
-                String path = Environment.getExternalStoragePublicDirectory(
-                        Environment.DIRECTORY_DOWNLOADS) + "/" + "AndroidTutorialPoint.mp3";
-
-                File target = new File(path);
-                Uri musicUri = Uri.fromFile(target);
-                Log.d("uri:", musicUri.toString());
+                Log.d("Directory: ", Environment.DIRECTORY_MUSIC);
+//                String path = Environment.getExternalStoragePublicDirectory(
+//                        Environment.DIRECTORY_DOWNLOADS) + "/" + downloadTitle;
 
 
+                File dir = getExternalFilesDir(Environment.DIRECTORY_MUSIC);
 
-//                Uri uri = downloadManager.getUriForDownloadedFile(downloadReference);
-//                Uri uri = Uri.parse(Environment.DIRECTORY_DOWNLOADS);
-//                Log.d( "Uri: ", uri.toString());
-//                File path = Environment.getExternalStorageDirectory().getAbsoluteFile();
-
-
-                if(path == null)
-                    Log.d("NULL DIRECTORY", "triggered");
-                else
-                    Log.d("non-Null DIRECTORY", path);
-
-                if (target == null) {
-                    Log.d("NULL MUSIC FILE", "triggered");
-                }
-                else {
-                    Log.d("non-null file", target.getName());
-                }
-
-
-//                File[] files = path.listFiles();
-//                if(files == null)
-//                Log.d("NULL MUSIC FILES", "triggered");
-//                else
-//                Log.d("non-Null MUSIC FILES", files[0].getName());
-//                int resId = getResources().getIdentifier(path.getName(),
-//                        "raw",getPackageName());
-
-
-//                player.playMusicId(resId);
-//                for (int i = 0; i < fileNames.length; i++) {
-//                    Log.d("Filename: ", fileNames[i].getName());
-//                }
-
-//                mmr = new MediaMetadataRetriever();
-////
-////                Log.d("path: ", path.toString());
-//                mmr.setDataSource(MainActivity.this, musicUri);
+//                File target = MainActivity.this.getFileStreamPath(path);
+//                Uri musicUri = Uri.fromFile(target)
 //
+// ;
+                File[] target = dir.listFiles();
+                for(int i = 0; i < target.length; i++)
+                {
+                    Log.d("file", target[i].getName());
+                }
+
+
+                Uri filePath = Uri.parse(target[target.length-1].getAbsolutePath());
+
+
+
+
+                mmr = new MediaMetadataRetriever();
+
+                mmr.setDataSource(MainActivity.this, filePath);
+
 //                //add list of song objects
-//                String title = mmr.extractMetadata(SONG_TITLE);
-//                String artist = mmr.extractMetadata(SONG_ARTIST);
-//                String album = mmr.extractMetadata(SONG_ALBUM);
-//                String duration = mmr.extractMetadata(SONG_DURATION);
-//                Log.d("title:", title);
-//                Log.d("artist:", artist);
-//                Log.d("album:", album);
-//                Log.d("duration:", duration);
-//                if(artist == null)
-//                    artist = "Unknown Artist";
-//                if(album == null)
-//                    album = "Unknown Album";
-//
-//                long durationToLong = Long.parseLong(duration);
-//
-//                songListObj.add(new Song(title, artist, album,
-//                        durationToLong, (int) downloadReference));
-//
-//                String display = title + " - " + artist;
-//                songTitleList.add(display);
+                String title = mmr.extractMetadata(SONG_TITLE);
+                String artist = mmr.extractMetadata(SONG_ARTIST);
+                String album = mmr.extractMetadata(SONG_ALBUM);
+                String duration = mmr.extractMetadata(SONG_DURATION);
+
+                if (title == null) {
+                    title = "unknown Title";
+                }
+                if(artist == null)
+                    artist = "Unknown Artist";
+                if(album == null)
+                    album = "Unknown Album";
+                Log.d("title:", title);
+                Log.d("artist:", artist);
+                Log.d("album:", album);
+
+                long durationToLong = Long.parseLong(duration);
+                Log.d("duration:", duration);
+
+//                Song downloadedSong = new Song(title, artist, album, durationToLong, )
+
+                songListObj.add(new Song(title, artist, album,
+                        durationToLong, filePath));
+
+                String display = title + " - " + artist;
+                songTitleList.add(display);
+                songList.add(target[target.length-1].getName());
+
+                adapter.notifyDataSetChanged();
+//                //handle listview and assign adapter
+//                listView = findViewById(R.id.songList);
+//                listView.setAdapter(adapter);
+
             }
 
         }
