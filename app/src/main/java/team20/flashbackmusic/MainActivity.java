@@ -292,8 +292,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     flashOn = true;
                     playingAlbumFlag = false;
 
-                    nextSong.setClickable(false);
-                    previousSong.setClickable(false);
+//                    nextSong.setClickable(false);
+//                    previousSong.setClickable(false);
                     listView.setEnabled(false);
 //                    playButton.setClickable(false);
                     player.changeToPauseButton();
@@ -782,11 +782,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showCurrentLocation(curPlaying);
         showDateAndTime(curPlaying);
 
+        if(curPlaying.isDownload())
+        {
+            player.playMusicUri(curPlaying.getSongUri());
+        }
+        else
+        {
+            int resID = getResources().getIdentifier(playlist.getSortingList().get(currentIndex),
+                    "raw", getPackageName());
 
-        int resID = getResources().getIdentifier(playlist.getSortingList().get(currentIndex),
-                "raw", getPackageName());
+            player.playMusicId(resID);
+        }
 
-        player.playMusicId(resID);
         player.changeToPauseButton();
 
         player.getMediaPlayer().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -850,9 +857,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     }
 
 
-                    int resID = getResources().getIdentifier(playlist.get(currentIndex),
-                            "raw", getPackageName());
-                    player.playMusicId(resID);
+                    if(songListObj.get(indexTosong.get(
+                            this.playlist.getSortingList().get(currentIndex))).isDownload())
+                    {
+                        player.playMusicUri(songListObj.get(indexTosong.get(
+                                this.playlist.getSortingList().get(currentIndex))).getSongUri());
+                    }
+                    else
+                    {
+                        int resID = getResources().getIdentifier(playlist.get(currentIndex),
+                                "raw", getPackageName());
+                        player.playMusicId(resID);
+                    }
 
                     player.changeToPauseButton();
 
@@ -924,11 +940,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         e.printStackTrace();
                     }
 
+                    if(songListObj.get(indexTosong.
+                            get(playlist.get(currentIndex))).isDownload())
+                    {
+                        player.playMusicUri(songListObj.get(indexTosong.
+                                get(playlist.get(currentIndex))).getSongUri());
+                    }
+                    else
+                    {
+                        int resID = getResources().getIdentifier(playlist.get(currentIndex),
+                                "raw", getPackageName());
 
-                    int resID = getResources().getIdentifier(playlist.get(currentIndex),
-                            "raw", getPackageName());
+                        player.playMusicId(resID);
+                    }
 
-                    player.playMusicId(resID);
                     player.changeToPauseButton();
 
                     player.getMediaPlayer().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -1151,26 +1176,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         "Music Download Complete", Toast.LENGTH_LONG).show();
 
                 Log.d("Directory: ", Environment.DIRECTORY_MUSIC);
-//                String path = Environment.getExternalStoragePublicDirectory(
-//                        Environment.DIRECTORY_DOWNLOADS) + "/" + downloadTitle;
 
-
+                //get external file directory
                 File dir = getExternalFilesDir(Environment.DIRECTORY_MUSIC);
 
-//                File target = MainActivity.this.getFileStreamPath(path);
-//                Uri musicUri = Uri.fromFile(target)
-//
-// ;
+                //get the list of files inside music directory
                 File[] target = dir.listFiles();
-                for(int i = 0; i < target.length; i++)
-                {
-                    Log.d("file", target[i].getName());
-                }
+//                for(int i = 0; i < target.length; i++)
+//                {
+//                    Log.d("file", target[i].getName());
+//                }
 
-
+                //get the uri of the file we just downloaded
                 Uri filePath = Uri.parse(target[target.length-1].getAbsolutePath());
-
-
 
 
                 mmr = new MediaMetadataRetriever();
@@ -1184,7 +1202,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 String duration = mmr.extractMetadata(SONG_DURATION);
 
                 if (title == null) {
-                    title = "unknown Title";
+                    title = "Unknown Title";
                 }
                 if(artist == null)
                     artist = "Unknown Artist";
@@ -1193,6 +1211,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Log.d("title:", title);
                 Log.d("artist:", artist);
                 Log.d("album:", album);
+
+//                LocalMusicParser musicParser = new LocalMusicParser(
+//                        MainActivity.this, mmr, songListObj);
+//
+//                musicParser.getMusic(songList, songTitleList);
+//                //populate album after we get music
+//                musicParser.populateAlbum(songListObj, albumList);
 
                 long durationToLong = Long.parseLong(duration);
                 Log.d("duration:", duration);
@@ -1206,10 +1231,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 songTitleList.add(display);
                 songList.add(target[target.length-1].getName());
 
+                //notify changes
+
+                indexTosong.put(songList.get(songList.size()-1),songList.size()-1);
+                sortingList.add(target[target.length-1].getName());
+
+                score = new ScoreVibe(songList,songListObj);
+                playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
                 adapter.notifyDataSetChanged();
+
+                player.playMusicUri(filePath);
 //                //handle listview and assign adapter
 //                listView = findViewById(R.id.songList);
 //                listView.setAdapter(adapter);
+
+                // Update album
+                //GET LIST OF SONGS FROM RAW DIRECTORY
+//        getMusic(songList, songTitleList);
+
 
             }
 
