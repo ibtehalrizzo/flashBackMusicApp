@@ -41,18 +41,34 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleBrowserClientRequestUrl;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.people.v1.PeopleService;
+import com.google.api.services.people.v1.model.ListConnectionsResponse;
+import com.google.api.services.people.v1.model.Person;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 //import com.google.gson.Gson;
 //import com.google.gson.reflect.TypeToken;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -90,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private FloatingActionButton nextSong;
     private FloatingActionButton previousSong;
     private Button addBtn;
-
+    User currentUser;
 
     private Score score;
 
@@ -134,6 +150,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private GoogleSignInClient mGoogleSignInClient;
     public static GoogleSignInAccount account;
     public static String emails;
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference VMode = database.getReference();
+    DatabaseReference VMSongs = database.getReference().child("Songs");
+    DatabaseReference VMUsers = database.getReference().child("Users");
+    private HashMap<String,User> userListFireBase;
+    private HashMap<String,Song> songListFireBase;
 
     /**
      * Class for adapting list view to put +,x, and checklist signs
@@ -252,7 +274,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         account = GoogleSignIn.getLastSignedInAccount(this);
         //Log.w("accont",account.getEmail());
         updateUI(account);
-
         //setup media player
         mediaPlayer = new MediaPlayer();
         detectTimeChanges();
@@ -365,7 +386,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         /*RESTORING PREVIOUS STATE*/
 
         //NOTE: BEFORE RESTORING STATE, ADD SONGS IN THE DIRECTORY FIRST
-        SharedPreferences sp = getSharedPreferences("lastState", MODE_PRIVATE);
+        //SharedPreferences sp = getSharedPreferences("lastState", MODE_PRIVATE);
         //   flashOn = sp.getBoolean("flashbackFlag", false);
         // currentindex = sp.getInt("lastPlayedIndex", -1);
    /*     if(getSongListObj()!=null)
@@ -581,7 +602,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             }
         });
-
     }
 
 
@@ -1235,16 +1255,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         if (account == null) {
             Intent intent = new Intent(this, login.class);
             startActivity(intent);
-        } else emails = account.getEmail();
+        } else {
+            emails = account.getEmail();
+            emails = emails.split("@")[0];
+            Log.d("emails",emails);
+            getUserList();
+            //Log.d("name",currentUser.getUserName());
+        }
     }
 
     public void VMPlay(final Song song) {       //add song or update song in database
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference VMode = database.getReference();
-        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if (!dataSnapshot.child("Songs").hasChild(song.getTitle())) {
+                if (!dataSnapshot.hasChild(song.getTitle())) {
                     //downloadsong
                 } else {
                     //play thie song
@@ -1257,16 +1283,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
     }
-    private void addVMList(final String friendName){   //If friend is one of the User of VM, add the songlist of this friend
-        final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference VMode = database.getReference();
-        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+
+    private void getUser() {   //get the current user from the firebase
+        //Query query = VMode;
+        VMUsers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.child("Users").hasChild(friendName)){
-                    User friend = dataSnapshot.child("Users").child("friendName").getValue(User.class);
-                    List<String> friendSongList = friend.getDownloadedSong();
-                    songList.addAll(friendSongList);
+                Log.d("name0", emails);
+                if (dataSnapshot.hasChild(emails)) {
+                    Log.d("exist","exist");
+                    currentUser = dataSnapshot.child(emails).getValue(User.class);
+                    //Log.d("username",mReadFriends.getUserName());
+                    //String getUid = mReadFriends.userID;
+                    //List<String> friendSongList = friend.getDownloadedSong();
+                    //songList.addAll(friendSongList);
+                    //}
                 }
             }
 
@@ -1276,10 +1307,47 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
     }
+    private void getUserList() {   //Get all the users from firebase
+        //Query query = VMode;
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+                userListFireBase= null;
+                while(iter.hasNext()){
+                    DataSnapshot snapshot  = iter.next();
+                    userListFireBase = (HashMap<String,User>) snapshot.getValue();
+                    Log.d("list",String.valueOf(userListFireBase.size()));
+                }
 
+                ///////////////////
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    private void getSongList() {  //get all the songs from firebase
+        //Query query = VMode;
+        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+                songListFireBase= null;
+                while(iter.hasNext()){
+                    DataSnapshot snapshot  = iter.next();
+                    songListFireBase = (HashMap<String,Song>) snapshot.getValue();
+                    //Log.d("list",String.valueOf(userListFireBase.size()));
+                }
+                //////////////////////
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
 }
-
-
-
-
-

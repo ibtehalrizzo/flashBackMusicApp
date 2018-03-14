@@ -22,6 +22,8 @@ public class User {
     private List<String> downloadedSong;
     private Location lastCurrentLocation;
 
+    public User(){}
+
     public User(String userName) {
         this.userName = userName;
         friendList = new HashMap<>();
