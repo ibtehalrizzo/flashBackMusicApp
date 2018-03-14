@@ -17,7 +17,6 @@ public class MusicPlayer {
     private MusicLocator musicLocator;
     private Album albumToPlay;
     private FloatingActionButton playButton;
-    private boolean playingAlbumFlag;
 
     public MusicPlayer(MediaPlayer mp, MainActivity activity,
                        MusicLocator musicLocator, Album albumToPlay,
@@ -70,24 +69,20 @@ public class MusicPlayer {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 Log.d("onCompletionCalled", "yes!");
-                if (playingAlbumFlag) {
 
-                    //check if there is any song to play left in album
-                    if (!albumToPlay.isQueueEmpty()) {
-                        playAlbum();
-                    }
-                    //if there is no more album to play, go to waiting state
-                    else
-                    {
-                        playingAlbumFlag = false;
-                        //set button tag to play
-                        changeToPlayButton();
-                    }
-
-                } else {
+                //check if there is any song to play left in album
+                if (!albumToPlay.isQueueEmpty()) {
+                    playAlbum();
+                }
+                //if there is no more album to play, go to waiting state
+                else
+                {
+                    Log.d("playing album:", "Empty queue");
                     //set button tag to play
                     changeToPlayButton();
                 }
+
+
             }
         });
 
