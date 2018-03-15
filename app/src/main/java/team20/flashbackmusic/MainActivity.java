@@ -549,8 +549,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     player.setAlbumToPlay(albumToPlay);
                     player.setMusicLocator(musicLocator);
 
+                    ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
+                    for(int j = 0; j < albumTracks.size(); j++)
+                    {
+                        Log.d("album track list:", albumTracks.get(j).getTitle());
+                    }
                     //play the whole album
                     player.playAlbum();
+
+                    //after we are done playing the album
+                    playingAlbumFlag = false;
 
 
                 } else {
@@ -770,6 +778,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
      * This method play the music in order for flashback mode
      */
     public void playTracksOrder(){
+
+        //make sure that we are in vibe mode
+        playingAlbumFlag = false;
 
         player.stop();
         currentIndex = 0;
