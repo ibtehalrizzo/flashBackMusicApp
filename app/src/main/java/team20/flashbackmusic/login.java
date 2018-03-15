@@ -19,6 +19,12 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.HashMap;
 
 import static team20.flashbackmusic.MainActivity.account;
 import static team20.flashbackmusic.MainActivity.emails;
@@ -95,7 +101,46 @@ public class login extends AppCompatActivity{
         VMode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+
+                //get current hashmap from database
+
+//                if(!dataSnapshot.child("HashUsers").hasChild("hash"))
+//                {
+//                    Log.d("list USERS empty", "EMPTY");
+//                    HashMap<String, User> userList = new HashMap<>();
+//                    userList.put(name, new User(name));
+//                    Gson gson = new Gson();
+//                    String json = gson.toJson(userList);
+//                    VMode.child("HashUsers").child("hash").setValue(json);
+//
+//                }
+//                else
+//                {
+//                    if(!dataSnapshot.child("Users").hasChild(name)){
+//                        Log.d("name empty", "EMPTY");
+//
+//                        //get current hashmap
+//                        String currMap = (String) dataSnapshot.child("HashUsers").child("hash").getValue();
+//                        HashMap<String, User> userList = new Gson().fromJson(currMap, HashMap.class);
+////                        HashMap<String, User> userList = (HashMap<String,User>) dataSnapshot
+////                                .child("HashUsers").getValue();
+//                        userList.put(name, new User(name));
+//                        Gson gson = new Gson();
+//                        String json = gson.toJson(userList);
+//                        VMode.child("HashUsers").child("hash").setValue(json);
+//                        VMode.child("Users").child(name).setValue(new User(name));
+//                    }
+//
+//                }
+
+//                if (!dataSnapshot.child("HashSongs").hasChild("hash")))
+//                {
+//
+//                }
+
                 if(!dataSnapshot.child("Users").hasChild(name)){
+
+                    Log.d("USER empty", "EMPTY");
                     User user = new User(name);
                     //user.addfriend("2", new User("2"));
                     //friend.put(name,user);

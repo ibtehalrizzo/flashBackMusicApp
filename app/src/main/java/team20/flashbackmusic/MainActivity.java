@@ -58,6 +58,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.model.ListConnectionsResponse;
 import com.google.api.services.people.v1.model.Person;
+import com.google.common.reflect.TypeToken;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -66,6 +67,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 //import com.google.gson.Gson;
 //import com.google.gson.reflect.TypeToken;
 
@@ -87,6 +90,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javax.servlet.http.HttpSessionActivationListener;
 
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
@@ -291,7 +296,81 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         account = GoogleSignIn.getLastSignedInAccount(this);
         //Log.w("accont",account.getEmail());
+
+
+        userListFireBase = new HashMap<>();
+        songListFireBase = new HashMap<>();
+
+
         updateUI(account);
+
+
+        //debug for checking null account or not
+        if(account == null)
+            Log.d("null account:", "trigerred!");
+        else
+            Log.d("non-null account:", account.getDisplayName());
+
+
+//        MyCallbackInterface callback = new Callback();
+
+        //GET HASHTABLES FROM DATABASE
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                getUserList(new Callback(){
+//                    @Override
+//                    public void call(HashMap<String, User> userHashMap)
+//                    {
+//                        HashMap<String, User> featuresFromJson
+//                                = new Gson().fromJson(userHashMap.toString(),
+//                                new TypeToken<Map<String, User>>(){}.getType());
+//
+//                        for (Map.Entry<String, User> entry : featuresFromJson.entrySet()) {
+//                            User featureDetails = entry.getValue();
+//                            Log.d("userList:", featureDetails.getUserName());
+//                        }
+////                        userListFireBase = new Gson().fromJson(userHashMap.toString(), HashMap.class);
+////                        for(String s: userListFireBase.keySet())
+////                        {
+////                            Log.d("userList:", ((User)userListFireBase.get(s)).getUserName());
+////                        }
+////                        Log.d("userList:", userListFireBase.toString());
+//                    }
+//                });
+//            }
+//        });
+
+        getUserList(new Callback(){
+//            @Override
+//            public void call(HashMap<String, User> userHashMap) {
+//                Log.d("userListFireBase:", userHashMap.toString());
+//                for(String s: userHashMap.keySet()){
+//                        Log.d("userList keyset", s);
+//                        Log.d("userList:", userHashMap.get(s).toString());
+//                }
+//                userListFireBase = userHashMap;
+//            }
+            @Override
+            public void callUser(ArrayList<User> userList)
+            {
+                for(User u: userList)
+                {
+                    userListFireBase.put(u.getUserName(), u);
+                }
+                for(String s: userListFireBase.keySet()){
+                    Log.d("userList keyset", s);
+                    Log.d("userList:", userListFireBase.get(s).getUserName());
+                }
+            }
+            @Override
+            public void callSong(ArrayList<Song> songList)
+            {
+            }
+
+        });
+
+//        getSongList(callback);
 
 
 
@@ -321,15 +400,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         //TODO Modify the code below to get the hashTable from firebase uselist
         //TODO same for songlist firsbase
-        userListFireBase = new HashMap<>();
-        songListFireBase = new HashMap<>();
+//        userListFireBase = new HashMap<>();
+//        songListFireBase = new HashMap<>();
 
 
         //TODO Add some code for login
         //TODO Modify the string below to the user name
-        currentUser = new User("name of user get from Google login");
-        userListFireBase.put(currentUser.getUserName(), currentUser);
-
+//        String email = account.getEmail();
+//        email = email.split("@")[0];
+//        currentUser = userListFireBase.get(email);
+//        userListFireBase.put(currentUser.getUserName(), currentUser);
+//        currentUser = userListFireBase.get("christhoperbernard");
         //TODO ADD CODE BELOW TO UODATE THE uselistFireBase TO THE FIREBASE
 
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -431,44 +512,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // Make list
         listView = findViewById(R.id.songList);
 
-        songList = new ArrayList<>();
-        songTitleList = new ArrayList<>();
-        songListObj = new ArrayList<>();
-        albumList = new Hashtable<>();
-        indexTosong = new Hashtable<>();
 
-
-        songListObj = currentUser.getDownloadedSong();
-        for(int i = 0; i < songListObj.size(); i++){
-            songList.set(i, songListObj.get(i).getTitle());
-            String title = songListObj.get(i).getTitle();
-            String artist = songListObj.get(i).getArtist();
-            String display = title + " - " + artist;
-            songTitleList.set(i,display);
-        }
 
         //GET LIST OF SONGS FROM RAW DIRECTORY
 //        getMusic(songList, songTitleList);
-        LocalMusicParser musicParser = new LocalMusicParser(this, mmr, songListObj);
+//        LocalMusicParser musicParser = new LocalMusicParser(this, mmr, songListObj);
 
-        musicParser.getMusic(songList, songTitleList);
+//        musicParser.getMusic(songList, songTitleList);
         //populate album after we get music
-        musicParser.populateAlbum(songListObj, albumList);
+//        musicParser.populateAlbum(songListObj, albumList);
 
 
-        //initialize flashback mode data
-        sortingList = new ArrayList<>(songList);
-        for(int i=0;i<songList.size();i++){
-            indexTosong.put(songList.get(i),i);
-        }
-        score = new ScoreVibe(songList,songListObj);
-        playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
 
 
         /*RESTORING PREVIOUS STATE*/
 
         //NOTE: BEFORE RESTORING STATE, ADD SONGS IN THE DIRECTORY FIRST
-        SharedPreferences sp = getSharedPreferences("lastState", MODE_PRIVATE);
+//        SharedPreferences sp = getSharedPreferences("lastState", MODE_PRIVATE);
      //   flashOn = sp.getBoolean("flashbackFlag", false);
        // currentindex = sp.getInt("lastPlayedIndex", -1);
    /*     if(getSongListObj()!=null)
@@ -508,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         /*RESTORING PREVIOUS STATE*/
 
-        adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
+//        adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
         //handle listview and assign adapter
         listView = findViewById(R.id.songList);
@@ -613,10 +673,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
 
         //show list of albums
-        tempListAlbum = new ArrayList<>(albumList.values());
-        albumAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_expandable_list_item_1, tempListAlbum);
-        albumView.setAdapter(albumAdapter);
+//        tempListAlbum = new ArrayList<>(albumList.values());
+//        albumAdapter = new ArrayAdapter<>(this,
+//                android.R.layout.simple_expandable_list_item_1, tempListAlbum);
+//        albumView.setAdapter(albumAdapter);
 
 
         //set on item click listener for album list
@@ -1174,7 +1234,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     isFriend = true;
                 }
             }
-            if(isFriend) {
+            if(isFriend || song.getLastUserName().equals(currentUser.getUserName())) {
                 displayRabbit.setText("Last played by: " + song.getLastUserName());
             }
             else{
@@ -1308,9 +1368,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         storeDateAndTime(currentPlayingSong);
         currentPlayingSong.setLastUserName(currentUser.getUserName());
         songListFireBase.put(currentPlayingSong.getTitle(), currentPlayingSong);
+
+        Log.d("updateFirebaseInfo:", "called update");
         for(String username: userListFireBase.keySet()) {
             User tempUser = userListFireBase.get(username);
+            Log.d("updateFirebaseInfo:", tempUser.getUserName());
             for(int i = 0; i <tempUser.getDownloadedSong().size(); i++){
+                Log.d("updateFirebaseInfo:", tempUser.getDownloadedSong().get(i).getTitle());
                 if(tempUser.getDownloadedSong().get(i).getTitle().equals(currentPlayingSong.getTitle())){
                     tempUser.getDownloadedSong().set(i, currentPlayingSong);
 
@@ -1397,6 +1461,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 //                    Log.d("file", target[i].getName());
 //                }
 
+//                initializeSongList();
+
                 //get the uri of the file we just downloaded
                 Uri filePath = Uri.parse(target[target.length-1].getAbsolutePath());
 
@@ -1442,6 +1508,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 score = new ScoreVibe(songList,songListObj);
                 playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
                 adapter.notifyDataSetChanged();
+
+                //update database of Song and User
+
+                userListFireBase.get(currentUser.getUserName())
+                        .setDownloadedSong((ArrayList<Song>) songListObj);
+
+                if (!songListFireBase.containsKey(currDownloadUri))
+                {
+                    songListFireBase.put(currDownloadUri+"", songListObj.get(songListObj.size()-1));
+                }
+
+                updateUserHash();
+                updateSongHash();
+
 
 //                player.playMusicUri(filePath);
 //                //handle listview and assign adapter
@@ -1510,11 +1590,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         if (account == null) {
             Intent intent = new Intent(this, login.class);
             startActivity(intent);
+
+//            String email = account.getEmail();
+//            email = email.split("@")[0];
+
         } else {
             emails = account.getEmail();
             emails = emails.split("@")[0];
             Log.d("emails",emails);
-            getUserList();
+//            getUserList();
             //Log.d("name",currentUser.getUserName());
         }
     }
@@ -1562,20 +1646,70 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
     }
-    private void getUserList() {   //Get all the users from firebase
+   /* private void getUserList(final Callback callbackInterface) {   //Get all the users from firebase
         //Query query = VMode;
         VMode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
-                userListFireBase= null;
-                while(iter.hasNext()){
-                    DataSnapshot snapshot  = iter.next();
-                    userListFireBase = (HashMap<String,User>) snapshot.getValue();
-                    Log.d("list",String.valueOf(userListFireBase.size()));
+//                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+//                userListFireBase= null;
+//                while(iter.hasNext()){
+//                    DataSnapshot snapshot  = iter.next();
+//                    userListFireBase = (HashMap<String,User>) snapshot.getValue();
+//                    Log.d("list",String.valueOf(userListFireBase.size()));
+//
+//                    Iterator it = userListFireBase.entrySet().iterator();
+//                    while (it.hasNext()) {
+//                        Map.Entry pair = (Map.Entry)it.next();
+////                        System.out.println(pair.getKey() + " = " + pair.getValue());
+//                        Log.d("printing user:", pair.getKey() + " = " + pair.getValue());
+//
+////                        User currentUser = pair.getValue();
+//                        it.remove(); // avoids a ConcurrentModificationException
+//                        Log.d("printing user object:", currentUser.getUserName());
+//
+//                    }
+//
+//                }
+
+                HashMap<String, User> hash;
+                if(dataSnapshot.child("HashUsers").hasChild("hash")){
+//                    userListFireBase = (HashMap<String, User>) dataSnapshot.child("HashUsers").getValue(String.class);
+
+//                    hash = (HashMap<String, User>)dataSnapshot.child("HashUsers").child("hash").getValue();
+
+                    String currHashMap = (String) dataSnapshot.child("HashUsers").child("hash").getValue();
+                    hash = new Gson().fromJson(currHashMap, HashMap.class);
+//                    userListFireBase = new Gson().fromJson(userList[0], HashMap.class);
+//                    for(String s: userListFireBase.keySet()){
+//                        Gson gson = new Gson();
+//                        User userObj = userListFireBase.get(s);
+//                        User curUser = gson.fromJson(String.valueOf(userObj), User.class);
+//                        Log.d("key:", userListFireBase.toString());
+//                    }
+
                 }
+                else
+                    hash = new HashMap<>();
+
+                Log.d("data firebase: ", hash.toString());
+//                callbackInterface.callbackUser(hash);
+//                HashMap<String,User> a =
+
+//                userListFireBase = gson.fromJson((JsonElement) a, HashMap.class);;
+//                userListFireBase = a;//gson.fromJson(a, HashMap.class);
+
+//                for(String s: userListFireBase.keySet()){
+//                    Gson gson = new Gson();
+//                    User userObj = userListFireBase.get(s);
+//                    User curUser = gson.fromJson(String.valueOf(userObj), User.class);
+//                    Log.d("key:", curUser.getUserName());
+//                }
+//                if(userListFireBase.isEmpty())
+//                    Log.d("EMPTY USER HASH:", "TRIGERRED");
 
                 ///////////////////
+                callbackInterface.call(hash);
             }
 
             @Override
@@ -1583,20 +1717,118 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             }
         });
-    }
-    private void getSongList() {  //get all the songs from firebase
-        //Query query = VMode;
-        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
+
+//        callbackInterface.call(userList[0]);
+
+
+    }*/
+
+
+
+    private void getUserList(final Callback callbackInterface) {   //Get all the users from firebase
+        VMUsers.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
-                songListFireBase= null;
-                while(iter.hasNext()){
-                    DataSnapshot snapshot  = iter.next();
-                    songListFireBase = (HashMap<String,Song>) snapshot.getValue();
-                    //Log.d("list",String.valueOf(userListFireBase.size()));
+
+                ArrayList<User> userList = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    User user = snapshot.getValue(User.class);
+                    userList.add(user);
+                    Log.d("currentUser", user.getUserName());
+                    if(user.getDownloadedSong().isEmpty())
+                    {
+                        Log.d("currentUserSong", "is empty");
+                    }
                 }
-                //////////////////////
+                ///////////////////
+                callbackInterface.callUser(userList);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
+
+
+
+//    private void getSongList(final Callback callbackInterface) {  //get all the songs from firebase
+//        //Query query = VMode;
+//        ArrayList<Song> downloadedSongList
+//                = userListFireBase.get(currentUser.getUserName()).getDownloadedSong();
+//
+//        for(Song s: downloadedSongList)
+//        {
+//            songListFireBase.put(s.getTitle(), s);
+//        }
+//
+//        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
+////            @Override
+////            public void onDataChange(DataSnapshot dataSnapshot) {
+//////                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+//////                songListFireBase= null;
+//////                while(iter.hasNext()){
+//////                    DataSnapshot snapshot  = iter.next();
+//////                    songListFireBase = (HashMap<String,Song>) snapshot.getValue();
+//////                    //Log.d("list",String.valueOf(userListFireBase.size()));
+//////                }
+////                //////////////////////
+////                if(!dataSnapshot.child("HashSongs").hasChild("hash"))
+////                {
+//////                    HashMap<String, Song> songList = new HashMap<>();
+//////
+//////                    Gson gson = new Gson();
+//////                    String json = gson.toJson(songList);
+//////                    VMode.child("HashSongs").child("hash").setValue(json);
+////                    songListFireBase = new HashMap<>();
+////                }
+////                else
+////                {
+////                    HashMap<String, Song> songList = new HashMap<>();
+////                    songList = (HashMap<String, Song>) dataSnapshot.child("HashSongs").getValue();
+//////                    callbackInterface.callbackSongList(songList);
+////                }
+//////                songListFireBase = (HashMap<String,Song>) dataSnapshot
+//////                        .child("HashSongs").getValue();
+////
+////            }
+//
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//
+//                ArrayList<User> songList = new ArrayList<>();
+//                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+//                    Song song = snapshot.getValue(Song.class);
+//                    songList.add(song);
+//                    Log.d("currentSong", song.getTitle());
+////                    if(song.getDownloadedSong().isEmpty())
+////                    {
+////                        Log.d("currentUserSong", "is empty");
+////                    }
+//                }
+//                ///////////////////
+//                callbackInterface.callUser(songList);
+//            }
+//
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {
+//
+//            }
+//        });
+//    }
+
+    public void updateUserHash()
+    {
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                userListFireBase = (HashMap<String,User>)dataSnapshot.child("HashUsers").getValue();
+                Gson gson = new Gson();
+                String json = gson.toJson(userListFireBase);
+                VMode.child("HashUsers").child("hash").setValue(json);
             }
 
             @Override
@@ -1606,5 +1838,82 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
     }
 
+    public void updateSongHash() {
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                songListFireBase = (HashMap<String, Song>) dataSnapshot.child("HashSongs").getValue();
+                Gson gson = new Gson();
+                String json = gson.toJson(songListFireBase);
+                VMode.child("HashSongs").child("hash").setValue(json);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void initializeSongList()
+    {
+        String email = account.getEmail();
+        email = email.split("@")[0];
+        currentUser = userListFireBase.get(email);
+        songList = new ArrayList<>();
+        songTitleList = new ArrayList<>();
+        songListObj = new ArrayList<>();
+        albumList = new Hashtable<>();
+        indexTosong = new Hashtable<>();
+
+
+        songListObj = currentUser.getDownloadedSong();
+        for(int i = 0; i < songListObj.size(); i++){
+            songList.set(i, songListObj.get(i).getTitle());
+            String title = songListObj.get(i).getTitle();
+            String artist = songListObj.get(i).getArtist();
+            String display = title + " - " + artist;
+            songTitleList.set(i,display);
+        }
+        //initialize flashback mode data
+        sortingList = new ArrayList<>(songList);
+        for(int i=0;i<songList.size();i++){
+            indexTosong.put(songList.get(i),i);
+        }
+        score = new ScoreVibe(songList,songListObj);
+        playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+    }
+
+//    interface MyCallbackInterface {
+//
+//        void callbackUser(HashMap<String, User> userList);
+//        void callbackSongList(HashMap<String, Song> songList);
+//
+//    }
+//    class Callback implements MyCallbackInterface{
+//        @Override
+//        public void callbackUser(HashMap<String, User> userList)
+//        {
+//            userListFireBase = userList;
+//            for(String s: userListFireBase.keySet())
+//                Log.d("userList", userList.get(s).getUserName());
+//        }
+//        @Override
+//        public void callbackSongList(HashMap<String, Song> songList)
+//        {
+//            songListFireBase = songList;
+//            initializeSongList();
+//        }
+//    }
+        public interface Callback {
+//            void call(HashMap<String, User> userHashMap);
+            void callUser(ArrayList<User> userList);
+            void callSong(ArrayList<Song> songList);
+        }
+
+//        public void addCallback()
+//        {
+//
+//        }
 
 }
