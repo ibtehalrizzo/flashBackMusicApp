@@ -27,6 +27,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".login"
+            android:label="login" >
+        </activity>
+
         <service
             android:name=".PlayAlbumService"
             android:enabled="true"

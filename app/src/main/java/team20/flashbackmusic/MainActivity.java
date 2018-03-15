@@ -2,6 +2,7 @@ package team20.flashbackmusic;
 
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,7 +11,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.location.Address;
+import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -19,15 +22,11 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.support.annotation.RequiresPermission;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -46,14 +45,46 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleBrowserClientRequestUrl;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.people.v1.PeopleService;
+import com.google.api.services.people.v1.model.ListConnectionsResponse;
+import com.google.api.services.people.v1.model.Person;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+//import com.google.gson.Gson;
+//import com.google.gson.reflect.TypeToken;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,13 +103,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private ListView listView;
     private ListAdapter listAdapter;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Added by Ibby and Alice
+
+    // Get from the Firebase of UserList
+    private HashMap<String,User> userListFireBase;
+    // Get from Firebase of SongList
+    private HashMap<String, Song> songListFireBase;
+    // The variable for current log in user
+    private User currentUser;
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+
     private MediaPlayer mediaPlayer;
     private MusicPlayer player;
 
     private Switch flashback;
     private FloatingActionButton playButton, nextSong,
             previousSong, showCurrentPlaylist;
-    private Button addBtn, clickDownload;
+    private Button addBtn, clickDownload, sortButton;
     private EditText downloadInput;
 
 //    private ScoreFlashback scoreFlashback;
@@ -95,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
     //TextViews of this activity
-    private TextView nowPlayingView, locationView, dateTimeView; //durationView;
+    private TextView nowPlayingView, locationView, dateTimeView, displayRabbit; //durationView;
 
     //list of songs according to purpose
     private List<String> songList; //to play music
@@ -127,6 +170,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private Uri currDownloadUri;
 
     private MyAdapter adapter;
+
+    private GoogleSignInClient mGoogleSignInClient;
+
+    public static GoogleSignInAccount account;
+    public static String emails;
+
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference VMode = database.getReference();
+    DatabaseReference VMSongs = database.getReference().child("Songs");
+    DatabaseReference VMUsers = database.getReference().child("Users");
+//    private HashMap<String,User> userListFireBase;
+//    private HashMap<String,Song> songListFireBase;
 
 
     /**
@@ -233,6 +288,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        account = GoogleSignIn.getLastSignedInAccount(this);
+        //Log.w("accont",account.getEmail());
+        updateUI(account);
+
+
+
         downloadInput = (EditText) findViewById(R.id.downloadTextField);
 
         //set filter to only when download is complete and register broadcast receiver
@@ -250,6 +312,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          */
         player = new MusicPlayer(mediaPlayer, this, musicLocator, albumToPlay,
                 playButton);
+
+
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Create by Ibby and Alice
+
+        //TODO Modify the code below to get the hashTable from firebase uselist
+        //TODO same for songlist firsbase
+        userListFireBase = new HashMap<>();
+        songListFireBase = new HashMap<>();
+
+
+        //TODO Add some code for login
+        //TODO Modify the string below to the user name
+        currentUser = new User("name of user get from Google login");
+        userListFireBase.put(currentUser.getUserName(), currentUser);
+
+        //TODO ADD CODE BELOW TO UODATE THE uselistFireBase TO THE FIREBASE
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
 
         //set up location manager, ask user for permission
         detectTimeChanges();
@@ -353,6 +437,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         albumList = new Hashtable<>();
         indexTosong = new Hashtable<>();
 
+
+        songListObj = currentUser.getDownloadedSong();
+        for(int i = 0; i < songListObj.size(); i++){
+            songList.set(i, songListObj.get(i).getTitle());
+            String title = songListObj.get(i).getTitle();
+            String artist = songListObj.get(i).getArtist();
+            String display = title + " - " + artist;
+            songTitleList.set(i,display);
+        }
+
         //GET LIST OF SONGS FROM RAW DIRECTORY
 //        getMusic(songList, songTitleList);
         LocalMusicParser musicParser = new LocalMusicParser(this, mmr, songListObj);
@@ -452,13 +546,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     setNowPlayingView(songTitleList.get(i));
                     showCurrentLocation(songListObj.get(i));
                     showDateAndTime(songListObj.get(i));
-                    storeDateAndTime(songListObj.get(i));
 
-                    try {
-                        musicLocator.storeLocation(songListObj.get(i));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    showFriendOrRabbit(songListObj.get(i));
+                    //update the history of playing date and time of song
+                    updateFireBaseInfo(songListObj.get(i));
+
 
 
 
@@ -557,8 +649,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //play the whole album
                     player.playAlbum();
 
-                    //after we are done playing the album
-                    playingAlbumFlag = false;
 
 
                 } else {
@@ -667,6 +757,62 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
            }
         });
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        //Created by Ibby Alice on March 6th
+
+        CharSequence sorts[] = new CharSequence[] {"Sort by Title", "Sort by Album", "Sort by Artist", "Sort by Status"};
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Pick a sorting method");
+        builder.setItems(sorts, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if(which == 0){
+                    Sort sortTile = new SortTitle();
+                    sortTile.sortPlayList(songListObj,songTitleList,songList);
+                    adapter.list = (ArrayList<String>)songTitleList;
+                    adapter.notifyDataSetChanged();
+
+                }
+                else if(which == 1){
+                    Sort sortAlbum = new SortAlbum();
+                    sortAlbum.sortPlayList(songListObj, songTitleList,songList);
+                    adapter.list = (ArrayList<String>)songTitleList;
+                    adapter.notifyDataSetChanged();
+                }
+                else if(which ==2){
+                    Sort sortArtist = new SortArtist();
+                    sortArtist.sortPlayList(songListObj,songTitleList,songList);
+                    adapter.list = (ArrayList<String>)songTitleList;
+                    adapter.notifyDataSetChanged();
+                }
+                else{
+                    Sort sortStatus = new SortStatus();
+                    sortStatus.sortPlayList(songListObj,songTitleList,songList);
+                    adapter.list = (ArrayList<String>)songTitleList;
+                    adapter.notifyDataSetChanged();
+                }
+
+            }
+        });
+
+
+        sortButton = (Button)findViewById(R.id.sortButton);
+        sortButton.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                if(!flashOn) {
+                    builder.show();
+                }
+            }
+        });
+
+
+
+
     }
 
     private void createButton() {
@@ -682,6 +828,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         albumView = findViewById(R.id.albumList);
         dateTimeView = findViewById(R.id.playingTime);
         locationView = findViewById(R.id.playingLoc);
+        displayRabbit = findViewById(R.id.displayRabbit);
     }
 
 
@@ -793,6 +940,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         showCurrentLocation(curPlaying);
         showDateAndTime(curPlaying);
 
+        showFriendOrRabbit(curPlaying);
+        updateFireBaseInfo(curPlaying);
+
         if(curPlaying.isDownload())
         {
             player.playMusicUri(curPlaying.getSongUri());
@@ -849,12 +999,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         setNowPlayingView(songTitleList.get(currentIndex));
                         showCurrentLocation(songListObj.get(currentIndex));
                         showDateAndTime(songListObj.get(currentIndex));
-                        storeDateAndTime(songListObj.get(currentIndex));
-                        try {
-                            musicLocator.storeLocation(songListObj.get(currentIndex));
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+
+                        showFriendOrRabbit(songListObj.get(currentIndex));
+                        //update the history of playing date and time of song
+                        updateFireBaseInfo(songListObj.get(currentIndex));
                     }
                     else{
                         Song curPlaying = songListObj.get(indexTosong.get(
@@ -864,6 +1012,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         setNowPlayingView(display);
                         showCurrentLocation(curPlaying);
                         showDateAndTime(curPlaying);
+
+                        showFriendOrRabbit(curPlaying);
+                        updateFireBaseInfo(curPlaying);
 
                     }
 
@@ -944,12 +1095,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     setNowPlayingView(songTitleList.get(currentIndex));
                     showCurrentLocation(songListObj.get(currentIndex));
                     showDateAndTime(songListObj.get(currentIndex));
-                    storeDateAndTime(songListObj.get(currentIndex));
-                    try {
-                        musicLocator.storeLocation(songListObj.get(currentIndex));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    showFriendOrRabbit(songListObj.get(currentIndex));
+                    //update the history of playing date and time of song
+                    updateFireBaseInfo(songListObj.get(currentIndex));
 
                     if(songListObj.get(indexTosong.
                             get(playlist.get(currentIndex))).isDownload())
@@ -1010,6 +1158,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         else{
             dateTimeView.setText("No Last Current Time and Date are available");
+        }
+
+    }
+
+    /**
+     * Show friend or anonymous rabbit
+     * @param song
+     */
+    public void showFriendOrRabbit(Song song){
+        if(song.getLastUserName() != null){
+            boolean isFriend = false;
+            for(String friendName: currentUser.getFriendList().keySet()){
+                if(friendName.equals(song.getLastUserName())){
+                    isFriend = true;
+                }
+            }
+            if(isFriend) {
+                displayRabbit.setText("Last played by: " + song.getLastUserName());
+            }
+            else{
+                displayRabbit.setText("Last played by: Anonymous Rabbit");
+            }
+        }
+        else{
+            displayRabbit.setText("No friend data available");
         }
 
     }
@@ -1124,6 +1297,32 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         }, timeDelay);
     }
+
+
+    public void updateFireBaseInfo(Song currentPlayingSong) {
+        try {
+            musicLocator.storeLocation(currentPlayingSong);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        storeDateAndTime(currentPlayingSong);
+        currentPlayingSong.setLastUserName(currentUser.getUserName());
+        songListFireBase.put(currentPlayingSong.getTitle(), currentPlayingSong);
+        for(String username: userListFireBase.keySet()) {
+            User tempUser = userListFireBase.get(username);
+            for(int i = 0; i <tempUser.getDownloadedSong().size(); i++){
+                if(tempUser.getDownloadedSong().get(i).getTitle().equals(currentPlayingSong.getTitle())){
+                    tempUser.getDownloadedSong().set(i, currentPlayingSong);
+
+                }
+
+            }
+        }
+
+        //TODO ADD CODE TO ACTUALL UPDATE TO FIREBASE
+    }
+
+
 
     /**
      * Source: https://www.androidtutorialpoint.com/networking/android-
@@ -1305,5 +1504,107 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         ArrayList<Song> songs = gson.fromJson(json,type);
         return songs;
    }*/
+
+
+    private void updateUI(GoogleSignInAccount account) {
+        if (account == null) {
+            Intent intent = new Intent(this, login.class);
+            startActivity(intent);
+        } else {
+            emails = account.getEmail();
+            emails = emails.split("@")[0];
+            Log.d("emails",emails);
+            getUserList();
+            //Log.d("name",currentUser.getUserName());
+        }
+    }
+
+    public void VMPlay(final Song song) {       //add song or update song in database
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference VMode = database.getReference();
+        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.hasChild(song.getTitle())) {
+                    //downloadsong
+                } else {
+                    //play thie song
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void getUser() {   //get the current user from the firebase
+        //Query query = VMode;
+        VMUsers.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Log.d("name0", emails);
+                if (dataSnapshot.hasChild(emails)) {
+                    Log.d("exist","exist");
+                    currentUser = dataSnapshot.child(emails).getValue(User.class);
+                    //Log.d("username",mReadFriends.getUserName());
+                    //String getUid = mReadFriends.userID;
+                    //List<String> friendSongList = friend.getDownloadedSong();
+                    //songList.addAll(friendSongList);
+                    //}
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    private void getUserList() {   //Get all the users from firebase
+        //Query query = VMode;
+        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+                userListFireBase= null;
+                while(iter.hasNext()){
+                    DataSnapshot snapshot  = iter.next();
+                    userListFireBase = (HashMap<String,User>) snapshot.getValue();
+                    Log.d("list",String.valueOf(userListFireBase.size()));
+                }
+
+                ///////////////////
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    private void getSongList() {  //get all the songs from firebase
+        //Query query = VMode;
+        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
+                songListFireBase= null;
+                while(iter.hasNext()){
+                    DataSnapshot snapshot  = iter.next();
+                    songListFireBase = (HashMap<String,Song>) snapshot.getValue();
+                    //Log.d("list",String.valueOf(userListFireBase.size()));
+                }
+                //////////////////////
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
 
 }

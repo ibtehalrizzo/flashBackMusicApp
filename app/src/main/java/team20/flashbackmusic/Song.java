@@ -13,6 +13,7 @@ import java.util.HashSet;
 
 public class Song {
     private String title, artist, album,mostRecentDateTimeString,mostRecentLocationString;
+    private String lastUserName;
     private Date mostRecentDateTime;
     private Location mostRecentLocation; 
     private HashSet<Location> locationHistory;
@@ -113,6 +114,13 @@ public class Song {
     }
 
     // GETTER AND SETTER METHOD //
+    public String getLastUserName(){
+        return lastUserName;
+    }
+    public void setLastUserName(String userName){
+        lastUserName = userName;
+    }
+
     public String getTitle()
     {
         return title;

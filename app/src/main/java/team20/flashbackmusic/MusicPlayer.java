@@ -56,13 +56,8 @@ public class MusicPlayer {
         activity.showCurrentLocation(songToPlay);
         activity.showDateAndTime(songToPlay);
 
-        //update the history of playing date and time of song
-        activity.storeDateAndTime(songToPlay);
-        try {
-            musicLocator.storeLocation(songToPlay);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        activity.showFriendOrRabbit(songToPlay);
+        activity.updateFireBaseInfo(songToPlay);
 
         //set media player listener
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
