@@ -80,16 +80,16 @@ public class PlayPauseBackForwardNormalModeEspresso {
                         isDisplayed()));
         textView3.check(matches(withText("No Last Current Time and Date are available")));
 
-        ViewInteraction textView4 = onView(
-                allOf(withId(R.id.songDuration), withText("Song duration"),
-                        childAtPosition(
-                                allOf(withId(R.id.nowPlayingLayout),
-                                        childAtPosition(
-                                                IsInstanceOf.<View>instanceOf(android.widget.RelativeLayout.class),
-                                                1)),
-                                3),
-                        isDisplayed()));
-        textView4.check(matches(withText("Song duration")));
+//        ViewInteraction textView4 = onView(
+//                allOf(withId(R.id.songDuration), withText("Song duration"),
+//                        childAtPosition(
+//                                allOf(withId(R.id.nowPlayingLayout),
+//                                        childAtPosition(
+//                                                IsInstanceOf.<View>instanceOf(android.widget.RelativeLayout.class),
+//                                                1)),
+//                                3),
+//                        isDisplayed()));
+//        textView4.check(matches(withText("Song duration")));
 
         ViewInteraction imageButton = onView(
                 allOf(withId(R.id.playButton),

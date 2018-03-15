@@ -2,6 +2,7 @@ package team20.flashbackmusic;
 
 
 import android.support.test.InstrumentationRegistry;
+import android.support.test.espresso.DataInteraction;
 import android.support.test.espresso.ViewInteraction;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
@@ -23,24 +24,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static android.support.test.espresso.Espresso.onData;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
-import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.action.ViewActions.scrollTo;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.is;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class EmptyPlaylistTest {
+public class AlbumCurrPlaylistTest {
 
     UiDevice mUiDevice;
 
     @Rule
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
+
 
     @Before
     public void setup() {
@@ -75,7 +79,6 @@ public class EmptyPlaylistTest {
                                                 0)),
                                 0),
                         isDisplayed()));
-
         px.perform(click());
 
         // Added a sleep statement to match the app's execution delay.
@@ -107,9 +110,17 @@ public class EmptyPlaylistTest {
             e.printStackTrace();
         }
     }
-
     @Test
-    public void emptyPlaylistTest() {
+    public void albumCurrPlaylistTest() {
+
+        DataInteraction appCompatTextView = onData(anything())
+                .inAdapterView(allOf(withId(R.id.albumList),
+                        childAtPosition(
+                                withId(R.id.albumHorizontalView),
+                                0)))
+                .atPosition(1);
+        appCompatTextView.perform(scrollTo(), click());
+
         ViewInteraction floatingActionButton = onView(
                 allOf(withId(R.id.currentPlaylist),
                         childAtPosition(
