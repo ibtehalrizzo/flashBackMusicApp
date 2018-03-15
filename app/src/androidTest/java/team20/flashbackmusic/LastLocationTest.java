@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.anything;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class MainActivityTest {
+public class LastLocationTest {
 
     @Rule
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
@@ -71,17 +71,6 @@ public class MainActivityTest {
                                 1),
                         isDisplayed()));
         textView.check(matches(isDisplayed()));
-
-//        ViewInteraction textView3 = onView(
-//                allOf(withId(R.id.playingTime), withText("21:21:04   14 Mar 2018"),
-//                        childAtPosition(
-//                                allOf(withId(R.id.nowPlayingLayout),
-//                                        childAtPosition(
-//                                                IsInstanceOf.<View>instanceOf(android.widget.RelativeLayout.class),
-//                                                2)),
-//                                2),
-//                        isDisplayed()));
-//        textView3.check(matches(isDisplayed()));
 
     }
 

@@ -301,8 +301,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     Location location = currentUserlocation;
                     int time = currentUserMNEIndex;
 
-                    Log.d("(flashback) time",Integer.toString(time));
-                    Log.d("flashback: ", "toggled flashback mode on");
+                    Log.d("(Vibe) time",Integer.toString(time));
+                    Log.d("Vibe: ", "toggled Vibe mode on");
 
                     int day = currentUserDayOfWeek;
 
@@ -315,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     playTracksOrder();
 
                     Toast.makeText(MainActivity.this,
-                            "Flashback mode on", Toast.LENGTH_SHORT).show();
+                            "Vibe mode on", Toast.LENGTH_SHORT).show();
                 }
                 else {
                     flashOn = false;
@@ -329,9 +329,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     player.changeToPlayButton();
 
-
+                    Log.d("Vibe: ", "toggled Vibe mode off");
                     Toast.makeText(MainActivity.this,
-                            "Flashback mode off", Toast.LENGTH_SHORT).show();
+                            "Vibe mode off", Toast.LENGTH_SHORT).show();
                 }
             }
         });
