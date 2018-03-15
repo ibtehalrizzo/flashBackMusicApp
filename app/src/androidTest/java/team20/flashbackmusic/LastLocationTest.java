@@ -25,25 +25,24 @@ import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anything;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class LocationAndLastPlayEspressoTest {
+public class MainActivityTest {
 
     @Rule
     public ActivityTestRule<MainActivity> mActivityTestRule = new ActivityTestRule<>(MainActivity.class);
 
     @Test
-    public void locationAndLastPlayEspressoTest() {
+    public void mainActivityTest() {
         DataInteraction relativeLayout = onData(anything())
                 .inAdapterView(allOf(withId(R.id.songList),
                         childAtPosition(
                                 withId(R.id.layoutList),
                                 1)))
-                .atPosition(1);
+                .atPosition(0);
         relativeLayout.perform(click());
 
         DataInteraction relativeLayout2 = onData(anything())
@@ -51,7 +50,7 @@ public class LocationAndLastPlayEspressoTest {
                         childAtPosition(
                                 withId(R.id.layoutList),
                                 1)))
-                .atPosition(3);
+                .atPosition(2);
         relativeLayout2.perform(click());
 
         DataInteraction relativeLayout3 = onData(anything())
@@ -59,35 +58,30 @@ public class LocationAndLastPlayEspressoTest {
                         childAtPosition(
                                 withId(R.id.layoutList),
                                 1)))
-                .atPosition(1);
+                .atPosition(0);
         relativeLayout3.perform(click());
 
         ViewInteraction textView = onView(
-                allOf(withId(R.id.playingLoc), withText("6112-6398 La Jolla Colony Drive, California"),
+                allOf(withId(R.id.playingLoc), withText("1600 Amphitheatre Parkway, California"),
                         childAtPosition(
                                 allOf(withId(R.id.nowPlayingLayout),
                                         childAtPosition(
                                                 IsInstanceOf.<View>instanceOf(android.widget.RelativeLayout.class),
-                                                1)),
+                                                2)),
                                 1),
                         isDisplayed()));
+        textView.check(matches(isDisplayed()));
 
-
-        textView.check(matches(not(withText("No Last Current location is available"))));
-
-        /* THIS PART IS TESTING THE TIME, WHICH CHANGES ALL THE TIME,
-         * SINCE WE DIDN'T MOCK THE TIME */
-//
-//        ViewInteraction textView2 = onView(
-//                allOf(withId(R.id.playingTime), withText("07:15:48   19 Feb 2018"),
+//        ViewInteraction textView3 = onView(
+//                allOf(withId(R.id.playingTime), withText("21:21:04   14 Mar 2018"),
 //                        childAtPosition(
 //                                allOf(withId(R.id.nowPlayingLayout),
 //                                        childAtPosition(
 //                                                IsInstanceOf.<View>instanceOf(android.widget.RelativeLayout.class),
-//                                                1)),
+//                                                2)),
 //                                2),
 //                        isDisplayed()));
-//        textView2.check(matches(not(withText("No Last Current Time and Date are available"))));
+//        textView3.check(matches(isDisplayed()));
 
     }
 
