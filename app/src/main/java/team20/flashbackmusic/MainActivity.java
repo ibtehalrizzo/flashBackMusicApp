@@ -315,8 +315,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
 
-
-
         downloadInput = (EditText) findViewById(R.id.downloadTextField);
 
         //set filter to only when download is complete and register broadcast receiver
@@ -1559,20 +1557,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 //                    User user = snapshot.getValue(User.class);
 
                     String userStr = snapshot.getValue().toString();
-
+                    Log.d("current user str", "parsing " + userStr);
 //                    GsonBuilder gsonBuilder = new GsonBuilder();
 //                    gsonBuilder.registerTypeAdapter(Location.class, new LocationDeserializer());
 //                    gsonBuilder.registerTypeAdapter(Location.class, new LocationSerializer());
 //                    Gson gson = gsonBuilder.create();
 
                     User user = new Gson().fromJson(userStr, User.class);
-                    Log.d("currentUser", user.getUserName());
-                    userList.add(user);
-                    if(user.getDownloadedSong().isEmpty())
-                    {
-                        Log.d("currentUserSong", "is empty");
+
+                    if(user != null){
+                        Log.d("currentUser", user.getUserName());
+                        userList.add(user);
+                        if(user.getDownloadedSong().isEmpty())
+                        {
+                            Log.d("currentUserSong", "is empty");
+                        }
+                        Log.d("user list", userStr);
                     }
-                    Log.d("user list", userStr);
+//                    Log.d("currentUser", user.getUserName());
+//                    userList.add(user);
+//                    if(user.getDownloadedSong().isEmpty())
+//                    {
+//                        Log.d("currentUserSong", "is empty");
+//                    }
+//                    Log.d("user list", userStr);
                 }
                 /////////////////
                 callbackInterface.callUser(userList);

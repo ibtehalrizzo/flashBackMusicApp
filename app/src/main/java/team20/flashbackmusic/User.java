@@ -22,14 +22,14 @@ public class User {
         this.userName = "noname";
         friendList = new HashMap<>();
         downloadedSong = new ArrayList<>();
-        lastCurrentLocation = null;
+        lastCurrentLocation = new Location("");
     }
 
     public User(String userName){
         this.userName = userName;
         friendList = new HashMap<>();
         downloadedSong = new ArrayList<>();
-        lastCurrentLocation = null;
+        lastCurrentLocation = new Location("");
     }
 
     public User(String userName, Location lastCurrentLocation){
