@@ -48,6 +48,7 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.tasks.Task;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleBrowserClientRequestUrl;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -63,12 +64,20 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.Exclude;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 //import com.google.gson.Gson;
 //import com.google.gson.reflect.TypeToken;
 
@@ -77,6 +86,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,9 +122,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     // Added by Ibby and Alice
 
     // Get from the Firebase of UserList
-    private HashMap<String,User> userListFireBase;
+    private static Map<String,User> userListFireBase;
     // Get from Firebase of SongList
-    private HashMap<String, Song> songListFireBase;
+    private static Map<String, Song> songListFireBase;
     // The variable for current log in user
     private User currentUser;
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -185,6 +195,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     DatabaseReference VMode = database.getReference();
     DatabaseReference VMSongs = database.getReference().child("Songs");
     DatabaseReference VMUsers = database.getReference().child("Users");
+    DatabaseReference VMUserHash = VMode.child("HashUsers");
+    DatabaseReference VMSongHash = VMode.child("HashSongs");
 //    private HashMap<String,User> userListFireBase;
 //    private HashMap<String,Song> songListFireBase;
 
@@ -294,83 +306,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        account = GoogleSignIn.getLastSignedInAccount(this);
-        //Log.w("accont",account.getEmail());
 
-
-        userListFireBase = new HashMap<>();
-        songListFireBase = new HashMap<>();
-
-
+        //login and initialize
+        account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
         updateUI(account);
+        initialize();
 
 
-        //debug for checking null account or not
-        if(account == null)
-            Log.d("null account:", "trigerred!");
-        else
-            Log.d("non-null account:", account.getDisplayName());
 
-
-//        MyCallbackInterface callback = new Callback();
-
-        //GET HASHTABLES FROM DATABASE
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                getUserList(new Callback(){
-//                    @Override
-//                    public void call(HashMap<String, User> userHashMap)
-//                    {
-//                        HashMap<String, User> featuresFromJson
-//                                = new Gson().fromJson(userHashMap.toString(),
-//                                new TypeToken<Map<String, User>>(){}.getType());
-//
-//                        for (Map.Entry<String, User> entry : featuresFromJson.entrySet()) {
-//                            User featureDetails = entry.getValue();
-//                            Log.d("userList:", featureDetails.getUserName());
-//                        }
-////                        userListFireBase = new Gson().fromJson(userHashMap.toString(), HashMap.class);
-////                        for(String s: userListFireBase.keySet())
-////                        {
-////                            Log.d("userList:", ((User)userListFireBase.get(s)).getUserName());
-////                        }
-////                        Log.d("userList:", userListFireBase.toString());
-//                    }
-//                });
-//            }
-//        });
-
-        getUserList(new Callback(){
-//            @Override
-//            public void call(HashMap<String, User> userHashMap) {
-//                Log.d("userListFireBase:", userHashMap.toString());
-//                for(String s: userHashMap.keySet()){
-//                        Log.d("userList keyset", s);
-//                        Log.d("userList:", userHashMap.get(s).toString());
-//                }
-//                userListFireBase = userHashMap;
-//            }
-            @Override
-            public void callUser(ArrayList<User> userList)
-            {
-                for(User u: userList)
-                {
-                    userListFireBase.put(u.getUserName(), u);
-                }
-                for(String s: userListFireBase.keySet()){
-                    Log.d("userList keyset", s);
-                    Log.d("userList:", userListFireBase.get(s).getUserName());
-                }
-            }
-            @Override
-            public void callSong(ArrayList<Song> songList)
-            {
-            }
-
-        });
-
-//        getSongList(callback);
 
 
 
@@ -422,7 +365,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-
                 locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 if (ActivityCompat.checkSelfPermission(MainActivity.this,
                         Manifest.permission.ACCESS_FINE_LOCATION)
@@ -441,77 +383,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         });
 
-        musicLocator = new MusicLocator(locationManager, MainActivity.this);
 
-        //initialize location of user
-        currentUserlocation = musicLocator.getCurrentLocation();
-
-
-        //set up flashback switch listener
-        flashback = findViewById(R.id.switch1);
-        flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked == true) {
-                    //update flags
-                    flashOn = true;
-                    playingAlbumFlag = false;
-
-//                    nextSong.setClickable(false);
-//                    previousSong.setClickable(false);
-                    listView.setEnabled(false);
-//                    playButton.setClickable(false);
-                    player.changeToPauseButton();
-
-                    Location location = currentUserlocation;
-                    int time = currentUserMNEIndex;
-
-                    Log.d("(flashback) time",Integer.toString(time));
-                    Log.d("flashback: ", "toggled flashback mode on");
-
-                    int day = currentUserDayOfWeek;
-
-                    //get score to list out song to be played
-                    score.score(location, day, time);
-                    playlist.sorter();
-                    sortingList = playlist.getSortingList();
-
-                    //play the song according to the score order
-                    playTracksOrder();
-
-                    Toast.makeText(MainActivity.this,
-                            "Flashback mode on", Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    flashOn = false;
-
-                    nextSong.setClickable(true);
-                    previousSong.setClickable(true);
-                    playButton.setClickable(true);
-                    listView.setEnabled(true);
-
-                    player.getMediaPlayer().stop();
-
-                    player.changeToPlayButton();
-
-
-                    Toast.makeText(MainActivity.this,
-                            "Flashback mode off", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-
-        //Play or Pause, Previous, Next button
-
-        player.changeToPlayButton();
 
         //initialize the views
         initializeView();
-
-        // Make list
-        listView = findViewById(R.id.songList);
-
 
 
         //GET LIST OF SONGS FROM RAW DIRECTORY
@@ -568,255 +443,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         /*RESTORING PREVIOUS STATE*/
 
-//        adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
 
-        //handle listview and assign adapter
-        listView = findViewById(R.id.songList);
-        listView.setAdapter(adapter);
-
-
-        //set up listener for list of tracks list view
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-                Log.d("listView: ", "a song is clicked");
-
-                // Disable album queue
-                playingAlbumFlag = false;
-                currentIndex = i;
-
-                if (!flashOn) {
-                    Log.d("listView: ", "playing a song pressed by user");
-
-                    if(!songListObj.get(i).isDownload())
-                    {
-                        int resID = getResources().getIdentifier(songList.get(i),
-                                "raw", getPackageName());
-                        player.playMusicId(resID);
-
-                    }
-                    else
-                    {
-                        Uri path = songListObj.get(i).getSongUri();
-                        player.playMusicUri(path);
-                    }
-
-                    //set the current playing song in the text view
-                    setNowPlayingView(songTitleList.get(i));
-                    showCurrentLocation(songListObj.get(i));
-                    showDateAndTime(songListObj.get(i));
-
-                    showFriendOrRabbit(songListObj.get(i));
-                    //update the history of playing date and time of song
-                    updateFireBaseInfo(songListObj.get(i));
-
-
-
-
-                } else {
-
-                    Log.d("listView: ", "user pressed a track in flashback mode");
-                    //TODO: add pop up message where the user need to press ok
-                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
-                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
-                }
-
-
-            }
-        });
-
-
-        //set listener for next song button
-        nextSong.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (flashOn == false) {
-                    if(currentIndex == songList.size()-1){
-                        currentIndex = songList.size()-1;
-                        Toast lastSong = Toast.makeText(getApplicationContext(),
-                                "No next song available", Toast.LENGTH_SHORT);
-
-                        lastSong.show();
-                        return;
-                    }
-                    next(songList);
-                }
-            }
-        });
-
-
-        //set listener for previous song button
-        previousSong.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (flashOn == false) {
-
-                    if(playingAlbumFlag)
-                    {
-                        Toast.makeText(getApplicationContext(),
-                                "No previous song available." +
-                                        " You are playing an album", Toast.LENGTH_LONG).show();
-                    }
-                    else
-                    {
-                        if(currentIndex == 0){
-                            Toast firstSong = Toast.makeText(getApplicationContext(),
-                                    "No previous song available", Toast.LENGTH_LONG);
-                            firstSong.show();
-                            return;
-                        }
-                        previous(songList);
-                    }
-                }
-            }
-        });
-
-        //show list of albums
-//        tempListAlbum = new ArrayList<>(albumList.values());
-//        albumAdapter = new ArrayAdapter<>(this,
-//                android.R.layout.simple_expandable_list_item_1, tempListAlbum);
-//        albumView.setAdapter(albumAdapter);
-
-
-        //set on item click listener for album list
-        albumView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.d("album:", "album is clicked!");
-                // Enable album queue
-                playingAlbumFlag = true;
-
-                if (!flashOn) {
-                    Log.d("album:", "playing the whole album");
-
-                    player.releaseMusicPlayer();
-
-                    //get album to play
-                    albumToPlay = tempListAlbum.get(i);
-
-                    //prepare album to be played
-                    albumToPlay.setupAlbum();
-
-                    player.setAlbumToPlay(albumToPlay);
-                    player.setMusicLocator(musicLocator);
-
-                    ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
-                    for(int j = 0; j < albumTracks.size(); j++)
-                    {
-                        Log.d("album track list:", albumTracks.get(j).getTitle());
-                    }
-                    //play the whole album
-                    player.playAlbum();
-
-
-
-                } else {
-                    Log.d("album:", "user pressed album in flashback mode");
-
-                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
-                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-        });
-
-        //set listener for the play button
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                player.playingAndPausing();
-            }
-        });
-
-        // Set listener for download button
-        clickDownload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d("download button: ", "clicked!");
-                if (downloadInput.getText().toString() == null) {
-                    Toast.makeText(MainActivity.this, "Download Link not found",
-                            Toast.LENGTH_LONG).show();
-                }
-                else
-                {
-                    // Get the text from the input and parse it as Uri
-                    String getDownloadLink = downloadInput.getText().toString();
-                    Uri song_uri = Uri.parse(getDownloadLink);
-
-//                    String[] permit = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 2);
-//                    permit = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
-//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 3);
-                    Music_DownloadId = downloadData(song_uri);
-
-                }
-            }
-        });
-
-
-        // Set listener for show current playlist button
-        showCurrentPlaylist.setOnClickListener(new View.OnClickListener() {
-           @Override
-           public void onClick(View view) {
-               Log.d("show current list:", "clicked!");
-               CharSequence trackList[];
-               final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-               //check if it is in vibe mode
-               if(flashOn){ //TODO: need to change to vibe boolean
-
-                   //get the neutral and favorited song
-                   ArrayList<String> listSong = new ArrayList<>();
-                   for(int i = 0; i < sortingList.size(); i++)
-                   {
-                       Song currSong = songListObj.get(
-                               indexTosong.get(playlist.getSortingList().get(i)));
-                       if (currSong.getStatus() != -1) {
-                           String display = currSong.getTitle() + " - " + currSong.getArtist();
-                           listSong.add(display);
-                       }
-                   }
-
-                   //display the song that is going to be played
-                   trackList = new CharSequence[listSong.size()];
-                   for(int i = 0; i < listSong.size(); i++)
-                   {
-                       // Put song to playlist if not disliked
-                       trackList[i] = listSong.get(i);
-                   }
-                   builder.setTitle("Vibe Mode Queue");
-
-               }
-               else if(playingAlbumFlag) {
-                   trackList = new CharSequence[albumToPlay.getListOfTracks().size()];
-                   ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
-                   for (int i = 0; i < albumTracks.size(); i++) {
-                       String display = albumTracks.get(i).getTitle() +
-                               " - " + albumTracks.get(i).getArtist();
-                       trackList[i] = display;
-                   }
-                   builder.setTitle(albumToPlay.getName());
-               }
-               else
-               {
-                   trackList = new CharSequence[]{ "Empty" };
-                   builder.setTitle("Normal Mode - No Track List Displayed");
-               }
-
-
-
-               builder.setItems(trackList, new DialogInterface.OnClickListener() {
-                   @Override
-                   public void onClick(DialogInterface dialog, int which) {
-
-                   }
-               });
-               builder.show();
-
-
-           }
-        });
 
 
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1005,7 +632,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         if(curPlaying.isDownload())
         {
-            player.playMusicUri(curPlaying.getSongUri());
+            player.playMusicUri(Uri.parse(curPlaying.getSongUri()));
         }
         else
         {
@@ -1082,8 +709,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     if(songListObj.get(indexTosong.get(
                             this.playlist.getSortingList().get(currentIndex))).isDownload())
                     {
-                        player.playMusicUri(songListObj.get(indexTosong.get(
-                                this.playlist.getSortingList().get(currentIndex))).getSongUri());
+                        player.playMusicUri(Uri.parse(songListObj.get(indexTosong.get(
+                                this.playlist.getSortingList().get(currentIndex))).getSongUri()));
                     }
                     else
                     {
@@ -1162,8 +789,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     if(songListObj.get(indexTosong.
                             get(playlist.get(currentIndex))).isDownload())
                     {
-                        player.playMusicUri(songListObj.get(indexTosong.
-                                get(playlist.get(currentIndex))).getSongUri());
+                        player.playMusicUri(Uri.parse(songListObj.get(indexTosong.
+                                get(playlist.get(currentIndex))).getSongUri()));
                     }
                     else
                     {
@@ -1359,7 +986,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    public void updateFireBaseInfo(Song currentPlayingSong) {
+    public void updateFireBaseInfo(final Song currentPlayingSong) {
         try {
             musicLocator.storeLocation(currentPlayingSong);
         } catch (IOException e) {
@@ -1367,21 +994,106 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         storeDateAndTime(currentPlayingSong);
         currentPlayingSong.setLastUserName(currentUser.getUserName());
-        songListFireBase.put(currentPlayingSong.getTitle(), currentPlayingSong);
+        songListFireBase.put(currentPlayingSong.getSongDownloadUri()+"", currentPlayingSong);
 
         Log.d("updateFirebaseInfo:", "called update");
         for(String username: userListFireBase.keySet()) {
-            User tempUser = userListFireBase.get(username);
-            Log.d("updateFirebaseInfo:", tempUser.getUserName());
-            for(int i = 0; i <tempUser.getDownloadedSong().size(); i++){
-                Log.d("updateFirebaseInfo:", tempUser.getDownloadedSong().get(i).getTitle());
-                if(tempUser.getDownloadedSong().get(i).getTitle().equals(currentPlayingSong.getTitle())){
-                    tempUser.getDownloadedSong().set(i, currentPlayingSong);
 
-                }
+            Log.d("username", username);
+//            User user = new Gson().fromJson(String.valueOf(userListFireBase.get(username)), User.class);
+//            Log.d("firebase username", user.getUserName());
 
-            }
+//            final User tempUser = userListFireBase.get(username);
+//            Log.d("updateFirebaseInfo:", tempUser.getUserName());
+//            for(int i = 0; i <tempUser.getDownloadedSong().size(); i++){
+//                Log.d("updateFirebaseInfo:", tempUser.getDownloadedSong().get(i).getTitle());
+//                if(tempUser.getDownloadedSong().get(i).getTitle().equals(currentPlayingSong.getTitle())){
+//                    tempUser.getDownloadedSong().set(i, currentPlayingSong);
+//
+//                }
+//
+//            }
         }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateUserHash();
+                updateSongHash();
+            }
+        });
+
+
+//        getUserList(new Callback(){
+//            @Override
+//            public void callUser(ArrayList<User> userList)
+//            {
+//                userListFireBase = new HashMap<>();
+//                songListFireBase = new HashMap<>();
+//
+//                //GET ALL DOWNLOADED SONG
+//                songListObj = currentUser.getDownloadedSong();
+//                //check if there is no song downloaded yet
+//                if(songListObj == null)
+//                    songListObj = new ArrayList<>();
+//                for(int i = 0; i < songListObj.size(); i++){
+//                    songList.set(i, songListObj.get(i).getTitle());
+//                    String title = songListObj.get(i).getTitle();
+//                    String artist = songListObj.get(i).getArtist();
+//                    String display = title + " - " + artist;
+//                    songTitleList.set(i,display);
+//                }
+//
+//                //initialize vibe mode data
+//                sortingList = new ArrayList<>(songList);
+//                for(int i=0;i<songList.size();i++){
+//                    indexTosong.put(songList.get(i),i);
+//                }
+//
+//                score = new ScoreVibe(songList,songListObj);
+//                playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+//
+//
+//                getSongList(new Callback() {
+//                    @Override
+//                    public void callUser(ArrayList<User> userList) {
+//                    }
+//
+//                    @Override
+//                    public void callSong(ArrayList<Song> songList) {
+//                        songListFireBase = new HashMap<>();
+//                        for(Song s: songList)
+//                        {
+//                            songListFireBase.put(s.getSongUri()+"", s);
+//                        }
+//
+//                    }
+//                });
+//            }
+//            @Override
+//            public void callSong(ArrayList<Song> songList)
+//            {
+//            }
+//        });
+
+//        Log.d("updateFirebaseInfo:", "called update");
+//        for(String username: userListFireBase.keySet()) {
+//
+//            Log.d("username", username);
+//            User user = new Gson().fromJson(String.valueOf(userListFireBase.get(username)), User.class);
+//            Log.d("firebase username", user.getUserName());
+//
+//            User tempUser = userListFireBase.get(username);
+//            Log.d("updateFirebaseInfo:", tempUser.getUserName());
+//            for(int i = 0; i <tempUser.getDownloadedSong().size(); i++){
+//                Log.d("updateFirebaseInfo:", tempUser.getDownloadedSong().get(i).getTitle());
+//                if(tempUser.getDownloadedSong().get(i).getTitle().equals(currentPlayingSong.getTitle())){
+//                    tempUser.getDownloadedSong().set(i, currentPlayingSong);
+//
+//                }
+//
+//            }
+//        }
 
         //TODO ADD CODE TO ACTUALL UPDATE TO FIREBASE
     }
@@ -1456,12 +1168,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 //get the list of files inside music directory
                 File[] target = dir.listFiles();
-//                for(int i = 0; i < target.length; i++)
-//                {
-//                    Log.d("file", target[i].getName());
-//                }
 
-//                initializeSongList();
 
                 //get the uri of the file we just downloaded
                 Uri filePath = Uri.parse(target[target.length-1].getAbsolutePath());
@@ -1493,8 +1200,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 //                Song downloadedSong = new Song(title, artist, album, durationToLong, )
 
+
+
                 songListObj.add(new Song(title, artist, album,
-                        durationToLong, filePath));
+                        durationToLong, filePath, currDownloadUri));
 
                 String display = title + " - " + artist;
                 songTitleList.add(display);
@@ -1507,17 +1216,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 score = new ScoreVibe(songList,songListObj);
                 playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+
+                adapter.list = (ArrayList<String>) songTitleList;
                 adapter.notifyDataSetChanged();
 
                 //update database of Song and User
+                Log.d("download username", currentUser.getUserName());
+                currentUser.setDownloadedSong((ArrayList<Song>) songListObj);
 
-                userListFireBase.get(currentUser.getUserName())
-                        .setDownloadedSong((ArrayList<Song>) songListObj);
-
-                if (!songListFireBase.containsKey(currDownloadUri))
-                {
-                    songListFireBase.put(currDownloadUri+"", songListObj.get(songListObj.size()-1));
-                }
+                userListFireBase.put(currentUser.getUserName(), currentUser);
+                songListFireBase.put(currDownloadUri+"", songListObj.get(songListObj.size()-1));
+//                userListFireBase.get(currentUser.getUserName())
+//                        .setDownloadedSong((ArrayList<Song>) songListObj);
+//
+//                if (!songListFireBase.containsKey(currDownloadUri))
+//                {
+//                    songListFireBase.put(currDownloadUri+"", songListObj.get(songListObj.size()-1));
+//                }
 
                 updateUserHash();
                 updateSongHash();
@@ -1586,7 +1301,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
    }*/
 
 
-    private void updateUI(GoogleSignInAccount account) {
+    private void updateUI(final GoogleSignInAccount account) {
         if (account == null) {
             Intent intent = new Intent(this, login.class);
             startActivity(intent);
@@ -1598,8 +1313,117 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             emails = account.getEmail();
             emails = emails.split("@")[0];
             Log.d("emails",emails);
-//            getUserList();
-            //Log.d("name",currentUser.getUserName());
+
+            team20.flashbackmusic.MainActivity.account = account;
+//            String emails = team20.flashbackmusic.MainActivity.account.getEmail();
+//            emails = emails.split("@")[0];
+//            Log.d("current user email", emails);
+
+
+
+            getUserList(new Callback(){
+                @Override
+                public void callUser(ArrayList<User> userList)
+                {
+
+//                account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
+                    //Log.w("accont",account.getEmail());
+                    userListFireBase = new HashMap<>();
+                    songListFireBase = new HashMap<>();
+
+//                   String accountString = getIntent().getStringExtra("account");
+//                   team20.flashbackmusic.MainActivity.account
+//                           = GoogleSignIn.getLastSignedInAccount(MainActivity.this);//new Gson().fromJson(accountString, GoogleSignInAccount.class);
+//                    String emails = team20.flashbackmusic.MainActivity.account.getEmail();
+//                    emails = emails.split("@")[0];
+//                    Log.d("current user email", emails);
+//            account = userListFireBase.get(emails);
+
+
+                    //debug for checking null account or not
+                    if(team20.flashbackmusic.MainActivity.account == null)
+                        Log.d("null account:", "trigerred!");
+                    else
+                        Log.d("non-null account:", team20.flashbackmusic.MainActivity.account.getDisplayName());
+
+
+                    for(User u: userList)
+                    {
+                        userListFireBase.put(u.getUserName(), u);
+                    }
+                    for(String s: userListFireBase.keySet()){
+                        Log.d("userList keyset", s);
+                        Log.d("userList:", userListFireBase.get(s).getUserName());
+                    }
+
+                    currentUser = userListFireBase.get(emails);
+                    Log.d("current user", currentUser.getUserName());
+
+                    initialize();
+
+                    //GET ALL DOWNLOADED SONG
+                    songListObj = currentUser.getDownloadedSong();
+                    //check if there is no song downloaded yet
+                    if(songListObj == null)
+                        songListObj = new ArrayList<>();
+                    for(int i = 0; i < songListObj.size(); i++){
+//                        songList.set(i, songListObj.get(i).getTitle());
+                        songList.add(songListObj.get(i).getTitle());
+                        String title = songListObj.get(i).getTitle();
+                        String artist = songListObj.get(i).getArtist();
+                        String display = title + " - " + artist;
+//                        songTitleList.set(i,display);
+                        songTitleList.add(display);
+                    }
+
+                    //initialize vibe mode data
+                    sortingList = new ArrayList<>(songList);
+                    for(int i=0;i<songList.size();i++){
+                        indexTosong.put(songList.get(i),i);
+                    }
+
+                    score = new ScoreVibe(songList,songListObj);
+                    playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
+
+                    LocalMusicParser musicParser = new LocalMusicParser(
+                            MainActivity.this, mmr, songListObj);
+
+                    musicParser.populateAlbum(songListObj, albumList);
+
+                    //show list of albums
+                    tempListAlbum = new ArrayList<>(albumList.values());
+                    albumAdapter = new ArrayAdapter<>(MainActivity.this,
+                            android.R.layout.simple_expandable_list_item_1, tempListAlbum);
+                    albumView.setAdapter(albumAdapter);
+
+                    getSongList(new Callback() {
+                        @Override
+                        public void callUser(ArrayList<User> userList) {
+                        }
+
+                        @Override
+                        public void callSong(ArrayList<Song> songList) {
+                            songListFireBase = new HashMap<>();
+                            for(Song s: songList)
+                            {
+                                songListFireBase.put(s.getSongUri()+"", s);
+                            }
+                            for(String s: songListFireBase.keySet()){
+                                Log.d("songList keyset", s);
+                                Log.d("songList:", songListFireBase.get(s).getTitle());
+                            }
+
+                            setListeners();
+
+                        }
+                    });
+                }
+                @Override
+                public void callSong(ArrayList<Song> songList)
+                {
+                }
+            });
+
         }
     }
 
@@ -1732,15 +1556,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                 ArrayList<User> userList = new ArrayList<>();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    User user = snapshot.getValue(User.class);
-                    userList.add(user);
+//                    User user = snapshot.getValue(User.class);
+
+                    String userStr = snapshot.getValue().toString();
+
+//                    GsonBuilder gsonBuilder = new GsonBuilder();
+//                    gsonBuilder.registerTypeAdapter(Location.class, new LocationDeserializer());
+//                    gsonBuilder.registerTypeAdapter(Location.class, new LocationSerializer());
+//                    Gson gson = gsonBuilder.create();
+
+                    User user = new Gson().fromJson(userStr, User.class);
                     Log.d("currentUser", user.getUserName());
+                    userList.add(user);
                     if(user.getDownloadedSong().isEmpty())
                     {
                         Log.d("currentUserSong", "is empty");
                     }
+                    Log.d("user list", userStr);
                 }
-                ///////////////////
+                /////////////////
                 callbackInterface.callUser(userList);
             }
 
@@ -1755,80 +1589,34 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
 
-//    private void getSongList(final Callback callbackInterface) {  //get all the songs from firebase
-//        //Query query = VMode;
-//        ArrayList<Song> downloadedSongList
-//                = userListFireBase.get(currentUser.getUserName()).getDownloadedSong();
-//
-//        for(Song s: downloadedSongList)
-//        {
-//            songListFireBase.put(s.getTitle(), s);
-//        }
-//
-//        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
-////            @Override
-////            public void onDataChange(DataSnapshot dataSnapshot) {
-//////                Iterator<DataSnapshot> iter= dataSnapshot.getChildren().iterator();
-//////                songListFireBase= null;
-//////                while(iter.hasNext()){
-//////                    DataSnapshot snapshot  = iter.next();
-//////                    songListFireBase = (HashMap<String,Song>) snapshot.getValue();
-//////                    //Log.d("list",String.valueOf(userListFireBase.size()));
-//////                }
-////                //////////////////////
-////                if(!dataSnapshot.child("HashSongs").hasChild("hash"))
-////                {
-//////                    HashMap<String, Song> songList = new HashMap<>();
-//////
-//////                    Gson gson = new Gson();
-//////                    String json = gson.toJson(songList);
-//////                    VMode.child("HashSongs").child("hash").setValue(json);
-////                    songListFireBase = new HashMap<>();
-////                }
-////                else
-////                {
-////                    HashMap<String, Song> songList = new HashMap<>();
-////                    songList = (HashMap<String, Song>) dataSnapshot.child("HashSongs").getValue();
-//////                    callbackInterface.callbackSongList(songList);
-////                }
-//////                songListFireBase = (HashMap<String,Song>) dataSnapshot
-//////                        .child("HashSongs").getValue();
-////
-////            }
-//
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//
-//                ArrayList<User> songList = new ArrayList<>();
-//                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-//                    Song song = snapshot.getValue(Song.class);
-//                    songList.add(song);
-//                    Log.d("currentSong", song.getTitle());
-////                    if(song.getDownloadedSong().isEmpty())
-////                    {
-////                        Log.d("currentUserSong", "is empty");
-////                    }
-//                }
-//                ///////////////////
-//                callbackInterface.callUser(songList);
-//            }
-//
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {
-//
-//            }
-//        });
-//    }
+    private void getSongList(final Callback callbackInterface) {  //get all the songs from firebase
+        //Query query = VMode;
+        ArrayList<Song> downloadedSongList
+                = userListFireBase.get(currentUser.getUserName()).getDownloadedSong();
 
-    public void updateUserHash()
-    {
-        VMode.addListenerForSingleValueEvent(new ValueEventListener() {
+        for(Song s: downloadedSongList)
+        {
+            Log.d("downloaded song", s.getTitle());
+            songListFireBase.put(s.getSongDownloadUri()+"", s);
+        }
+
+
+        VMSongs.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                userListFireBase = (HashMap<String,User>)dataSnapshot.child("HashUsers").getValue();
-                Gson gson = new Gson();
-                String json = gson.toJson(userListFireBase);
-                VMode.child("HashUsers").child("hash").setValue(json);
+
+                ArrayList<Song> songList = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Song song = snapshot.getValue(Song.class);
+                    songList.add(song);
+                    Log.d("currentSong", song.getTitle());
+                    if(currentUser.getDownloadedSong().isEmpty())
+                    {
+                        Log.d("currentUserSong", "is empty");
+                    }
+                }
+                ///////////////////
+                callbackInterface.callSong(songList);
             }
 
             @Override
@@ -1836,16 +1624,48 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             }
         });
+    }
+
+    @Exclude
+    public void updateUserHash()
+    {
+        VMUserHash.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+//                userListFireBase = (HashMap<String,User>)dataSnapshot.child("HashUsers").getValue();
+
+
+                Gson gson = new Gson();
+                String json = gson.toJson(userListFireBase);
+
+                Log.d("updating user", currentUser.getUserName());
+
+//                VMode.child("Users").child(currentUser.getUserName()).set(currentUser);
+                VMUserHash.setValue(json);
+
+
+                VMUsers.child(currentUser.getUserName()).setValue(new Gson().toJson(currentUser));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
     }
 
     public void updateSongHash() {
         VMode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                songListFireBase = (HashMap<String, Song>) dataSnapshot.child("HashSongs").getValue();
+//                songListFireBase = (HashMap<String, Song>) dataSnapshot.child("HashSongs").getValue();
+                Log.d("SONG HASH", "updating song hash");
                 Gson gson = new Gson();
                 String json = gson.toJson(songListFireBase);
                 VMode.child("HashSongs").child("hash").setValue(json);
+
+
             }
 
             @Override
@@ -1855,65 +1675,383 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
     }
 
-    public void initializeSongList()
+    public void initialize()
     {
-        String email = account.getEmail();
-        email = email.split("@")[0];
-        currentUser = userListFireBase.get(email);
         songList = new ArrayList<>();
         songTitleList = new ArrayList<>();
         songListObj = new ArrayList<>();
         albumList = new Hashtable<>();
         indexTosong = new Hashtable<>();
-
-
-        songListObj = currentUser.getDownloadedSong();
-        for(int i = 0; i < songListObj.size(); i++){
-            songList.set(i, songListObj.get(i).getTitle());
-            String title = songListObj.get(i).getTitle();
-            String artist = songListObj.get(i).getArtist();
-            String display = title + " - " + artist;
-            songTitleList.set(i,display);
-        }
-        //initialize flashback mode data
-        sortingList = new ArrayList<>(songList);
-        for(int i=0;i<songList.size();i++){
-            indexTosong.put(songList.get(i),i);
-        }
-        score = new ScoreVibe(songList,songListObj);
-        playlist = new PlaylistVibe(sortingList, (ArrayList<Song>) songListObj, indexTosong);
     }
 
-//    interface MyCallbackInterface {
-//
-//        void callbackUser(HashMap<String, User> userList);
-//        void callbackSongList(HashMap<String, Song> songList);
-//
-//    }
-//    class Callback implements MyCallbackInterface{
-//        @Override
-//        public void callbackUser(HashMap<String, User> userList)
-//        {
-//            userListFireBase = userList;
-//            for(String s: userListFireBase.keySet())
-//                Log.d("userList", userList.get(s).getUserName());
-//        }
-//        @Override
-//        public void callbackSongList(HashMap<String, Song> songList)
-//        {
-//            songListFireBase = songList;
-//            initializeSongList();
-//        }
-//    }
-        public interface Callback {
-//            void call(HashMap<String, User> userHashMap);
-            void callUser(ArrayList<User> userList);
-            void callSong(ArrayList<Song> songList);
+    public interface Callback {
+        void callUser(ArrayList<User> userList);
+        void callSong(ArrayList<Song> songList);
+    }
+
+    public void setListeners(){
+        musicLocator = new MusicLocator(locationManager, MainActivity.this);
+
+        //initialize location of user
+        currentUserlocation = musicLocator.getCurrentLocation();
+
+
+        //set up flashback switch listener
+        flashback = findViewById(R.id.switch1);
+        flashback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked == true) {
+                    //update flags
+                    flashOn = true;
+                    playingAlbumFlag = false;
+
+//                    nextSong.setClickable(false);
+//                    previousSong.setClickable(false);
+                    listView.setEnabled(false);
+//                    playButton.setClickable(false);
+                    player.changeToPauseButton();
+
+                    Location location = currentUserlocation;
+                    int time = currentUserMNEIndex;
+
+                    Log.d("(flashback) time",Integer.toString(time));
+                    Log.d("flashback: ", "toggled flashback mode on");
+
+                    int day = currentUserDayOfWeek;
+
+                    //get score to list out song to be played
+                    score.score(location, day, time);
+                    playlist.sorter();
+                    sortingList = playlist.getSortingList();
+
+                    //play the song according to the score order
+                    playTracksOrder();
+
+                    Toast.makeText(MainActivity.this,
+                            "Flashback mode on", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    flashOn = false;
+
+                    nextSong.setClickable(true);
+                    previousSong.setClickable(true);
+                    playButton.setClickable(true);
+                    listView.setEnabled(true);
+
+                    player.getMediaPlayer().stop();
+
+                    player.changeToPlayButton();
+
+
+                    Toast.makeText(MainActivity.this,
+                            "Flashback mode off", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+
+        //Play or Pause, Previous, Next button
+
+        player.changeToPlayButton();
+
+
+
+
+        adapter = new MyAdapter((ArrayList<String>) songTitleList, this);
+
+        //handle listview and assign adapter
+        listView = findViewById(R.id.songList);
+        listView.setAdapter(adapter);
+
+
+        //set up listener for list of tracks list view
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                Log.d("listView: ", "a song is clicked");
+
+                // Disable album queue
+                playingAlbumFlag = false;
+                currentIndex = i;
+
+                if (!flashOn) {
+                    Log.d("listView: ", "playing a song pressed by user");
+
+                    if(!songListObj.get(i).isDownload())
+                    {
+                        int resID = getResources().getIdentifier(songList.get(i),
+                                "raw", getPackageName());
+                        player.playMusicId(resID);
+
+                    }
+                    else
+                    {
+                        Uri path = Uri.parse(songListObj.get(i).getSongUri());
+                        player.playMusicUri(path);
+                    }
+
+                    //set the current playing song in the text view
+                    setNowPlayingView(songTitleList.get(i));
+                    showCurrentLocation(songListObj.get(i));
+                    showDateAndTime(songListObj.get(i));
+
+                    showFriendOrRabbit(songListObj.get(i));
+                    //update the history of playing date and time of song
+                    updateFireBaseInfo(songListObj.get(i));
+
+
+
+
+                } else {
+
+                    Log.d("listView: ", "user pressed a track in flashback mode");
+                    //TODO: add pop up message where the user need to press ok
+                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
+                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
+                }
+
+
+            }
+        });
+
+
+        //set listener for next song button
+        nextSong.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (flashOn == false) {
+                    if(currentIndex == songList.size()-1){
+                        currentIndex = songList.size()-1;
+                        Toast lastSong = Toast.makeText(getApplicationContext(),
+                                "No next song available", Toast.LENGTH_SHORT);
+
+                        lastSong.show();
+                        return;
+                    }
+                    next(songList);
+                }
+            }
+        });
+
+
+        //set listener for previous song button
+        previousSong.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (flashOn == false) {
+
+                    if(playingAlbumFlag)
+                    {
+                        Toast.makeText(getApplicationContext(),
+                                "No previous song available." +
+                                        " You are playing an album", Toast.LENGTH_LONG).show();
+                    }
+                    else
+                    {
+                        if(currentIndex == 0){
+                            Toast firstSong = Toast.makeText(getApplicationContext(),
+                                    "No previous song available", Toast.LENGTH_LONG);
+                            firstSong.show();
+                            return;
+                        }
+                        previous(songList);
+                    }
+                }
+            }
+        });
+
+        //show list of albums
+//        tempListAlbum = new ArrayList<>(albumList.values());
+//        albumAdapter = new ArrayAdapter<>(this,
+//                android.R.layout.simple_expandable_list_item_1, tempListAlbum);
+//        albumView.setAdapter(albumAdapter);
+
+
+        //set on item click listener for album list
+        albumView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.d("album:", "album is clicked!");
+                // Enable album queue
+                playingAlbumFlag = true;
+
+                if (!flashOn) {
+                    Log.d("album:", "playing the whole album");
+
+                    player.releaseMusicPlayer();
+
+                    //get album to play
+                    albumToPlay = tempListAlbum.get(i);
+
+                    //prepare album to be played
+                    albumToPlay.setupAlbum();
+
+                    player.setAlbumToPlay(albumToPlay);
+                    player.setMusicLocator(musicLocator);
+
+                    ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
+                    for(int j = 0; j < albumTracks.size(); j++)
+                    {
+                        Log.d("album track list:", albumTracks.get(j).getTitle());
+                    }
+                    //play the whole album
+                    player.playAlbum();
+
+
+
+                } else {
+                    Log.d("album:", "user pressed album in flashback mode");
+
+                    Toast.makeText(MainActivity.this, "You are in flashback mode!\n" +
+                            "Please go to normal mode to select music", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+        });
+
+        //set listener for the play button
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                player.playingAndPausing();
+            }
+        });
+
+        // Set listener for download button
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                clickDownload.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Log.d("download button: ", "clicked!");
+                        if (downloadInput.getText().toString() == null) {
+                            Toast.makeText(MainActivity.this, "Download Link not found",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                        else
+                        {
+                            // Get the text from the input and parse it as Uri
+                            String getDownloadLink = downloadInput.getText().toString();
+                            Uri song_uri = Uri.parse(getDownloadLink);
+
+//                    String[] permit = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 2);
+//                    permit = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+//                    ActivityCompat.requestPermissions(MainActivity.this, permit, 3);
+                            Music_DownloadId = downloadData(song_uri);
+
+                        }
+                    }
+                });
+            }
+        });
+
+
+
+        // Set listener for show current playlist button
+        showCurrentPlaylist.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("show current list:", "clicked!");
+                CharSequence trackList[];
+                final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                //check if it is in vibe mode
+                if(flashOn){ //TODO: need to change to vibe boolean
+
+                    //get the neutral and favorited song
+                    ArrayList<String> listSong = new ArrayList<>();
+                    for(int i = 0; i < sortingList.size(); i++)
+                    {
+                        Song currSong = songListObj.get(
+                                indexTosong.get(playlist.getSortingList().get(i)));
+                        if (currSong.getStatus() != -1) {
+                            String display = currSong.getTitle() + " - " + currSong.getArtist();
+                            listSong.add(display);
+                        }
+                    }
+
+                    //display the song that is going to be played
+                    trackList = new CharSequence[listSong.size()];
+                    for(int i = 0; i < listSong.size(); i++)
+                    {
+                        // Put song to playlist if not disliked
+                        trackList[i] = listSong.get(i);
+                    }
+                    builder.setTitle("Vibe Mode Queue");
+
+                }
+                else if(playingAlbumFlag) {
+                    trackList = new CharSequence[albumToPlay.getListOfTracks().size()];
+                    ArrayList<Song> albumTracks = albumToPlay.getListOfTracks();
+                    for (int i = 0; i < albumTracks.size(); i++) {
+                        String display = albumTracks.get(i).getTitle() +
+                                " - " + albumTracks.get(i).getArtist();
+                        trackList[i] = display;
+                    }
+                    builder.setTitle(albumToPlay.getName());
+                }
+                else
+                {
+                    trackList = new CharSequence[]{ "Empty" };
+                    builder.setTitle("Normal Mode - No Track List Displayed");
+                }
+
+
+
+                builder.setItems(trackList, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+                builder.show();
+
+
+            }
+        });
+
+
+
+    }
+
+
+
+    /*Source: https://stackoverflow.com/questions/13944346/
+    runtimeexception-in-gson-parsing-json-failed-to-invoke-protected-java-lang-clas*/
+    class LocationSerializer implements JsonSerializer<Location>
+    {
+        public JsonElement serialize(Location t, Type type,
+                                     JsonSerializationContext jsc)
+        {
+            JsonObject jo = new JsonObject();
+            jo.addProperty("mProvider", t.getProvider());
+            jo.addProperty("mAccuracy", t.getAccuracy());
+            // etc for all the publicly available getters
+            // for the information you're interested in
+            // ...
+            return jo;
         }
 
-//        public void addCallback()
-//        {
-//
-//        }
+    }
 
+    class LocationDeserializer implements JsonDeserializer<Location>
+    {
+        public Location deserialize(JsonElement je, Type type,
+                                    JsonDeserializationContext jdc)
+                throws JsonParseException
+        {
+            JsonObject jo = je.getAsJsonObject();
+            Location l = new Location(jo.getAsJsonPrimitive("mProvider").getAsString());
+
+            if(jo.getAsJsonPrimitive() != null)
+                l.setAccuracy(jo.getAsJsonPrimitive("mAccuracy").getAsFloat());
+            // etc, getting and setting all the data
+            return l;
+        }
+    }
 }

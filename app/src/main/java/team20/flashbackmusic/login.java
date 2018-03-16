@@ -1,6 +1,7 @@
 package team20.flashbackmusic;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -24,6 +25,7 @@ import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static team20.flashbackmusic.MainActivity.account;
@@ -83,7 +85,9 @@ public class login extends AppCompatActivity{
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             account = completedTask.getResult(ApiException.class);
+
             emails = account.getEmail();
+
             initializeDatabase(emails);
             // Signed in successfully, show authenticated UI.
             updateUI(account);
@@ -98,6 +102,7 @@ public class login extends AppCompatActivity{
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         final DatabaseReference VMode = database.getReference();
         final String name = email.split("@")[0];
+
         VMode.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -142,10 +147,23 @@ public class login extends AppCompatActivity{
 
                     Log.d("USER empty", "EMPTY");
                     User user = new User(name);
+
+
+
+//                    ArrayList<Song> song = new ArrayList<>();
+//                    song.add(new Song("Perfect", "Ed Sheeran",
+//                            null, 123,
+//                            Uri.parse("https://www.dropbox.com/s/efpola8x0jk3f4k/Ed" +
+//                                    "%20Sheeran%20-%20Perfect%20Duet%20%28with%20Beyonc%C3%A9%29%20Official%20Audio.mp3?dl=0")));
+//
+//                    user.setDownloadedSong(song);
+
+
+
                     //user.addfriend("2", new User("2"));
                     //friend.put(name,user);
                     //user.setFriendList(friend);
-                    VMode.child("Users").child(name).setValue(user);
+                    VMode.child("Users").child(name).setValue(new Gson().toJson(user));
                 }
             }
 
@@ -160,6 +178,12 @@ public class login extends AppCompatActivity{
     private void updateUI(GoogleSignInAccount account){
         if(account != null){
             Intent intent  = new Intent(this, MainActivity.class);
+            Log.d("first time login", account.getEmail());
+            String accountString = new Gson().toJson(account);
+            intent.putExtra("account", accountString);
+            startActivity(intent);
+
+
             finish();
         }
     }

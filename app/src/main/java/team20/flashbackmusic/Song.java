@@ -23,7 +23,7 @@ public class Song {
     private HashSet<Integer> dayOfMonthHistory; //to check if it was played last week
     
     private int songResId;
-    private Uri songUri;
+    private String songUri, songDownloadUri;
 
     private int score;
     private int status; //1 - favorite, 0 - neutral, -1 - dislike
@@ -82,7 +82,7 @@ public class Song {
      * @param duration
      * @param id
      */
-    public Song(String title, String artist, String album, long duration, Uri id) {
+    public Song(String title, String artist, String album, long duration, Uri id, Uri songDownloadUri) {
         mostRecentDateTime = null;
         mostRecentLocation = null;
 
@@ -97,7 +97,9 @@ public class Song {
         this.title = title;
         this.artist = artist;
         this.album = album;
-        this.songUri = id;
+        this.songUri = id+"";
+        this.songDownloadUri = songDownloadUri+"";
+
         // Convert duration to time
         this.duration = duration;
 
@@ -110,6 +112,7 @@ public class Song {
         playedLastWeek = false;
         playedByAFriend = false;
         download = true;
+
 
     }
 
@@ -249,7 +252,9 @@ public class Song {
         return download;
     }
 
-    public Uri getSongUri() {
+    public String getSongUri() {
         return songUri;
     }
+
+    public String getSongDownloadUri(){return songDownloadUri;}
 }

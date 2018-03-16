@@ -42,7 +42,7 @@ public class MusicPlayer {
             playMusicId(resID);
         }
         else {
-            playMusicUri(songToPlay.getSongUri());
+            playMusicUri(Uri.parse(songToPlay.getSongUri()));
         }
 
         Log.d("album play", "playing next song in the album");

@@ -37,42 +37,42 @@ public class LocalMusicParser implements IMusicParser{
      *  @param songTitleList the list of title-artist of song to be displayed
      */
     public void getMusic(List songList, List songTitleList) {
-        Field[] fields = R.raw.class.getFields();
-
-        for (int i = 0; i < fields.length; i++) {
-            String songFilename = fields[i].getName();
-            songList.add(songFilename);
-
-            int resId = mainActivity.getResources().getIdentifier(songFilename,
-                    "raw", mainActivity.getPackageName());
-
-            Uri mediaPath = Uri.parse("android.resource://" + mainActivity.getPackageName() +
-                    "/" + resId);
-
-            mmr.setDataSource(mainActivity, mediaPath);
-
-            //add list of song objects
-            String title = mmr.extractMetadata(SONG_TITLE);
-            String artist = mmr.extractMetadata(SONG_ARTIST);
-            String album = mmr.extractMetadata(SONG_ALBUM);
-            String duration = mmr.extractMetadata(SONG_DURATION);
-
-            if (title == null)
-                title = "Unknown Title";
-            if(artist == null)
-                artist = "Unknown Artist";
-            if(album == null)
-                album = "Unknown Album";
-
-            long durationToLong = Long.parseLong(duration);
-
-            songListObj.add(new Song(title, artist, album, durationToLong, resId));
-
-            //add to list for display TODO: we can get data from song object instead
-            String display = title + " - " + artist;
-            songTitleList.add(display);
-
-        }
+//        Field[] fields = R.raw.class.getFields();
+//
+//        for (int i = 0; i < fields.length; i++) {
+//            String songFilename = fields[i].getName();
+//            songList.add(songFilename);
+//
+//            int resId = mainActivity.getResources().getIdentifier(songFilename,
+//                    "raw", mainActivity.getPackageName());
+//
+//            Uri mediaPath = Uri.parse("android.resource://" + mainActivity.getPackageName() +
+//                    "/" + resId);
+//
+//            mmr.setDataSource(mainActivity, mediaPath);
+//
+//            //add list of song objects
+//            String title = mmr.extractMetadata(SONG_TITLE);
+//            String artist = mmr.extractMetadata(SONG_ARTIST);
+//            String album = mmr.extractMetadata(SONG_ALBUM);
+//            String duration = mmr.extractMetadata(SONG_DURATION);
+//
+//            if (title == null)
+//                title = "Unknown Title";
+//            if(artist == null)
+//                artist = "Unknown Artist";
+//            if(album == null)
+//                album = "Unknown Album";
+//
+//            long durationToLong = Long.parseLong(duration);
+//
+//            songListObj.add(new Song(title, artist, album, durationToLong, resId));
+//
+//            //add to list for display TODO: we can get data from song object instead
+//            String display = title + " - " + artist;
+//            songTitleList.add(display);
+//
+//        }
     }
 
     /** This populate the album list of MainActivity

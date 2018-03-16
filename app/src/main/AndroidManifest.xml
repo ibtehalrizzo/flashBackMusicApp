@@ -32,10 +32,7 @@
             android:label="login" >
         </activity>
 
-        <service
-            android:name=".PlayAlbumService"
-            android:enabled="true"
-            android:exported="true" />
+
     </application>
 
 </manifest>
