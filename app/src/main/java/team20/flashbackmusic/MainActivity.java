@@ -382,7 +382,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
 
 
-
         //initialize the views
         initializeView();
 
@@ -494,6 +493,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 }
             }
         });
+
 
 
 
@@ -822,6 +822,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         }
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        unregisterReceiver(downloadReceiver);
     }
 
     @Override
@@ -1558,12 +1565,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     String userStr = snapshot.getValue().toString();
                     Log.d("current user str", "parsing " + userStr);
+                    Gson gson = new Gson();
 //                    GsonBuilder gsonBuilder = new GsonBuilder();
 //                    gsonBuilder.registerTypeAdapter(Location.class, new LocationDeserializer());
 //                    gsonBuilder.registerTypeAdapter(Location.class, new LocationSerializer());
 //                    Gson gson = gsonBuilder.create();
 
-                    User user = new Gson().fromJson(userStr, User.class);
+                    User user = gson.fromJson(userStr, User.class);
+//                    User user = gson.fromJson(userStr, User.class);
+                    Log.d("User class: ", user.toString());
 
                     if(user != null){
                         Log.d("currentUser", user.getUserName());
@@ -1574,13 +1584,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         }
                         Log.d("user list", userStr);
                     }
-//                    Log.d("currentUser", user.getUserName());
-//                    userList.add(user);
-//                    if(user.getDownloadedSong().isEmpty())
-//                    {
-//                        Log.d("currentUserSong", "is empty");
-//                    }
-//                    Log.d("user list", userStr);
                 }
                 /////////////////
                 callbackInterface.callUser(userList);
@@ -1671,7 +1674,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Log.d("SONG HASH", "updating song hash");
                 Gson gson = new Gson();
                 String json = gson.toJson(songListFireBase);
-                VMode.child("HashSongs").child("hash").setValue(json);
+                VMode.child("HashSongs").setValue(json);
 
 
             }
