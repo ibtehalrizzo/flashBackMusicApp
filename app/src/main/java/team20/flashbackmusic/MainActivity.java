@@ -762,9 +762,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 //                    ActivityCompat.requestPermissions(MainActivity.this, permit, 3);
                             Music_DownloadId = downloadData(song_uri);
                             next(playlist);
-                        } else{
+                        } else {
                             //int resID = getResources().getIdentifier(playlist.get(currentIndex),
-                              //      "raw", getPackageName());
+                            //      "raw", getPackageName());
                             //player.playMusicId(resID);
                             String getDownloadLink = friendListObj.get(indexTosongVM.get(this.VMlist.getSortingList().get(currentIndex))).getSongDownloadUri().toString().trim();
                             Uri song_uri = Uri.parse(getDownloadLink);
