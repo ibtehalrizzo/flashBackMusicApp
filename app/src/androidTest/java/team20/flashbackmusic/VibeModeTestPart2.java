@@ -151,26 +151,6 @@ public class VibeModeTestPart2 {
                         isDisplayed()));
         appCompatButton.perform(click());
 
-        ViewInteraction appCompatEditText3 = onView(
-                allOf(withId(R.id.downloadTextField), withText("https://www.dropbox.com/s/ilvs4t50l2rxxzz/spiraling-stars.mp3?dl=1"),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                0),
-                        isDisplayed()));
-        appCompatEditText3.perform(longClick());
-
-        // Added a sleep statement to match the app's execution delay.
-        // The recommended way to handle such scenarios is to use Espresso idling resources:
-        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
@@ -180,88 +160,14 @@ public class VibeModeTestPart2 {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatEditText4 = onView(
-                allOf(withId(R.id.downloadTextField), withText("https://www.dropbox.com/s/ilvs4t50l2rxxzz/spiraling-stars.mp3?dl=1"),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                0),
-                        isDisplayed()));
-        appCompatEditText4.perform(replaceText(""));
-
-        ViewInteraction appCompatEditText5 = onView(
-                allOf(withId(R.id.downloadTextField),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                0),
-                        isDisplayed()));
-        appCompatEditText5.perform(closeSoftKeyboard());
-
-        ViewInteraction appCompatEditText6 = onView(
-                allOf(withId(R.id.downloadTextField),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                0),
-                        isDisplayed()));
-        appCompatEditText6.perform(longClick());
-
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
         try {
-            Thread.sleep(50);
+            Thread.sleep(8000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        ViewInteraction linearLayout3 = onView(
-                allOf(withContentDescription("Paste"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withClassName(is("android.widget.RelativeLayout")),
-                                        1),
-                                0),
-                        isDisplayed()));
-        linearLayout3.perform(click());
-
-        ViewInteraction appCompatEditText7 = onView(
-                allOf(withId(R.id.downloadTextField),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                0),
-                        isDisplayed()));
-        appCompatEditText7.perform(replaceText("https://www.dropbox.com/s/fg7gc1tmdl1jre8/transmission-002-the-blackhole.mp3?dl=1"), closeSoftKeyboard());
-
-        // Added a sleep statement to match the app's execution delay.
-        // The recommended way to handle such scenarios is to use Espresso idling resources:
-        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        ViewInteraction appCompatButton2 = onView(
-                allOf(withId(R.id.downloadButton), withText("Download"),
-                        childAtPosition(
-                                allOf(withId(R.id.layoutDownload),
-                                        childAtPosition(
-                                                withClassName(is("android.widget.RelativeLayout")),
-                                                0)),
-                                1),
-                        isDisplayed()));
-        appCompatButton2.perform(click());
 
         ViewInteraction switch_ = onView(
                 allOf(withId(R.id.switch1), withText("Vibe"),
@@ -273,15 +179,15 @@ public class VibeModeTestPart2 {
                         isDisplayed()));
         switch_.perform(click());
 
-        ViewInteraction switch_2 = onView(
-                allOf(withId(R.id.switch1), withText("Vibe"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withClassName(is("android.support.design.widget.CoordinatorLayout")),
-                                        1),
-                                4),
-                        isDisplayed()));
-        switch_2.perform(click());
+//        ViewInteraction switch_2 = onView(
+//                allOf(withId(R.id.switch1), withText("Vibe"),
+//                        childAtPosition(
+//                                childAtPosition(
+//                                        withClassName(is("android.support.design.widget.CoordinatorLayout")),
+//                                        1),
+//                                4),
+//                        isDisplayed()));
+//        switch_2.perform(click());
 
     }
 
